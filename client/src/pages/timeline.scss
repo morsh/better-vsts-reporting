@@ -1,0 +1,16 @@
+@import '../globals';
+
+.timeline-container {
+  width: 90%
+}
+
+.react-calendar-timeline {
+}
+
+.react-calendar-timeline .rct-sidebar .rct-sidebar-header {
+  background: $md-secondary-color;
+}
+
+.react-calendar-timeline .rct-header .rct-label-group {
+  background: $md-secondary-color;
+}
