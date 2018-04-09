@@ -6,7 +6,6 @@ const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
-const authRouter = require('./routes/auth');
 const apiRouter = require('./routes/api');
 
 const app = express();

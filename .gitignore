@@ -29,3 +29,4 @@ client/**/*.css
 
 # private files
 *.private.*
+.vscode/launch.json

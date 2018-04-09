@@ -89,6 +89,52 @@ router.post('/activities/:id', async (req, res) => {
   }
 });
 
+router.get('/orgtree', async (req, res) => {
+
+  try {
+    let vstsWork = await connect.getWorkItemTrackingApi();
+
+    let defs = await vstsWork.queryByWiql({
+      query: `
+        Select [System.Id], [Title], [System.State] 
+        From WorkItems 
+        Where ([System.WorkItemType] = 'Activity' OR [System.WorkItemType] = 'Participant') AND
+              [System.AssignedTo] = @Me AND [Title] <> 'Please Delete' AND
+              [State] <> 'Removed'
+      `
+    }, { project: VSTS_PROJECT });
+
+    let ids = defs.workItems.map(workItem => workItem.id);
+    let fields = [
+      "System.Id",
+      "System.WorkItemType",
+      "System.Title",
+      "System.State",
+      "System.AreaPath",
+      "System.IterationPath",
+      "CSEngineering.ActivityType",
+      "CSEngineering.ActivityStartDate",
+      "CSEngineering.ActivityDuration",
+      "CSEngineering.ParticipationStartDate",
+      "CSEngineering.ParticipationDurationDays"
+    ];
+
+    let fromIndex = 0;
+    let allWorkItems = [];
+    while (ids.length > fromIndex) {
+      let iterationIds = ids.slice(fromIndex, fromIndex + VSTS_ITERATION_LIMIT);
+      let workItems = await vstsWork.getWorkItems(iterationIds, fields);
+      allWorkItems.push.apply(allWorkItems, workItems);
+
+      fromIndex += VSTS_ITERATION_LIMIT;
+    }
+
+    res.send(allWorkItems);
+  } catch (e) {
+    res.error(e);
+  }
+});
+
 function addItemFieldToArray(arr, item, field) {
   if (item.fields[field]) {
     arr.push({ "op": "add", "path": "/fields/" + field, "value": item.fields[field] });;
