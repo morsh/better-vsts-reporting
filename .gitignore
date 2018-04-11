@@ -8,9 +8,6 @@ node_modules/
 /coverage
 /client/coverage
 
-# build files
-/build
-
 # client build files
 /client/build
 
@@ -30,3 +27,5 @@ client/**/*.css
 # private files
 *.private.*
 .vscode/launch.json
+
+server/index2.js

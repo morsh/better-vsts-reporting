@@ -1,7 +1,8 @@
 import * as React from 'react';
 import * as _ from 'lodash';
-import { Card, Button, TextField, DatePicker, SelectField, CardTitle, CardText } from 'react-md';
+import { Card, Button, TextField, DatePicker, SelectField, CardTitle, CardText, Autocomplete } from 'react-md';
 import { VSTSActions, VSTSStore, ActivitiesContainer, Activity } from '../state';
+import { createNewActivity } from '../state/VSTSHelper';
 import connectToStores from 'alt-utils/lib/connectToStores';
 import Timeline from 'react-calendar-timeline/lib';
 import containerResizeDetector from 'react-calendar-timeline/lib/resize-detector/container';
@@ -15,6 +16,8 @@ interface State {
   start: number;
   end: number;
   selectedItem?: Activity;
+  filteredData?: any[];
+  search?: string;
 }
 
 class Page1 extends React.Component<ActivitiesContainer, State> {
@@ -32,6 +35,9 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
 
     this.previousMonth = this.previousMonth.bind(this);
     this.nextMonth = this.nextMonth.bind(this);
+    this.goToToday = this.goToToday.bind(this);
+    this.onCreateNewActivity = this.onCreateNewActivity.bind(this);
+
     this.onItemSelect = this.onItemSelect.bind(this);
     this.onItemDoubleClick = this.onItemDoubleClick.bind(this);
     this.getSelectedValue = this.getSelectedValue.bind(this);
@@ -41,9 +47,16 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     this.onItemResize = this.onItemResize.bind(this);
     this.onItemDuplicate = this.onItemDuplicate.bind(this);
 
+    this.onStartDateChange = this.onStartDateChange.bind(this);
+    this.onDurationChange = this.onDurationChange.bind(this);
+    this.onLinkChange = this.onLinkChange.bind(this);
+    this.handleAutocomplete = this.handleAutocomplete.bind(this);
+
     this.state = {
       start: moment('2018-09-01').startOf('month').valueOf(),
-      end: moment('2018-09-01').endOf('month').valueOf()
+      end: moment('2018-09-01').endOf('month').valueOf(),
+      filteredData: [],
+      search: ''
     };
   }
 
@@ -55,13 +68,11 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     VSTSActions.loadActivities();
   }
 
-  componentWillUpdate() {
+  componentDidUpdate() {
     let { selectedItem } = this.state;
-    if (selectedItem) {
-      let activity = _.find(this.props.activities, { id: selectedItem.id });
-      if (activity && (
-            activity.item.rev !== selectedItem.item.rev || 
-            (activity.item.rev === 1 && selectedItem.id === -1))) {
+    if (selectedItem && selectedItem.item.updating) {
+      let activity = _.find(this.props.visibleActivities, { id: selectedItem.id });
+      if (activity && !activity.item.updating) {
         this.setState({ selectedItem: undefined });
       }
     }
@@ -76,25 +87,32 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
   }
 
   previousMonth() {
-    this.setState({
-      start: moment(this.state.start).add(-1, 'month').valueOf(),
-      end:  moment(this.state.start).add(-1, 'month').endOf('month').valueOf()
-    });
-    VSTSActions.setTimeRange({
-      from: moment(this.state.start).add(-1, 'month'),
-      to: moment(this.state.start).add(-1, 'month').endOf('month')
-    });
+    let start = moment(this.state.start).add(-1, 'month').valueOf();
+    let end = moment(this.state.start).add(-1, 'month').endOf('month').valueOf();
+
+    this.setState({ start, end });
+    VSTSActions.setTimeRange({ from: moment(start), to: moment(end) });
   }
 
   nextMonth() {
-    this.setState({
-      start: moment(this.state.start).add(1, 'month').valueOf(),
-      end: moment(this.state.start).add(1, 'month').endOf('month').valueOf()
-    });
-    VSTSActions.setTimeRange({
-      from: moment(this.state.start).add(1, 'month'),
-      to:  moment(this.state.start).add(1, 'month').endOf('month')
-    });
+    let start = moment(this.state.start).add(1, 'month').valueOf();
+    let end = moment(this.state.start).add(1, 'month').endOf('month').valueOf();
+
+    this.setState({ start, end });
+    VSTSActions.setTimeRange({ from: moment(start), to: moment(end) });
+  }
+
+  goToToday() {
+    let start = moment().startOf('month').valueOf();
+    let end = moment().endOf('month').valueOf();
+
+    this.setState({ start, end });
+    VSTSActions.setTimeRange({ from: moment(start), to: moment(end) });
+  }
+
+  onCreateNewActivity() {
+    let activity = createNewActivity(VSTSStore.getState(), moment(this.state.start));
+    this.setState({ selectedItem: activity });
   }
 
   editItem(item?: Activity) {
@@ -106,8 +124,8 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
   }
 
   onItemSelect(itemId: number): Activity | undefined {
-    let selectedItem = this.props.activities.find(item => item.id === itemId);
-    this.setState({ selectedItem });
+    let selectedItem = this.props.visibleActivities.find(item => item.id === itemId);
+    this.setState({ selectedItem, search: selectedItem && selectedItem.parentPath || '' });
     return selectedItem;
   }
 
@@ -128,18 +146,28 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     return this.state.selectedItem && this.state.selectedItem.item.fields[fieldName] || null;
   }
 
-  onFieldChange(fieldName: string, newValue: string) {
+  onTextChange(prop: string, value: string) {
     let { selectedItem } = this.state;
     if (selectedItem) {
-      selectedItem.item.fields[fieldName] = newValue;
+      selectedItem[prop] = value;
       this.setState({ selectedItem });
     }
   }
 
-  onDateFieldChange(fieldName: string, newValue: string) {
+  onStartDateChange(value: string) {
     let { selectedItem } = this.state;
     if (selectedItem) {
-      selectedItem.item.fields[fieldName] = moment(newValue, 'MM/DD/YYYY').toISOString();
+      selectedItem.start_time = moment(value, 'MM/DD/YYYY');
+      selectedItem.end_time = moment(selectedItem.start_time).add(selectedItem.duration, 'days');
+      this.setState({ selectedItem });
+    }
+  }
+
+  onDurationChange(value: string) {
+    let { selectedItem } = this.state;
+    if (selectedItem) {
+      selectedItem.duration = parseInt(value, 0);
+      selectedItem.end_time = moment(selectedItem.start_time).add(selectedItem.duration, 'days');
       this.setState({ selectedItem });
     }
   }
@@ -147,6 +175,7 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
   onItemSave() {
     if (!this.state.selectedItem) { return; }
 
+    this.state.selectedItem.item.updating = true;
     if (this.state.selectedItem.id === -1) {
       VSTSActions.createActivity(this.state.selectedItem);
     } else {
@@ -164,8 +193,9 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     let { selectedItem } = this.state;
     if (!selectedItem) { return; }
 
-    selectedItem.item.fields['CSEngineering.ActivityStartDate'] = moment(dragTime).toISOString();
-    selectedItem.item.fields['System.Title'] = this.props.groups[newGroupOrder].title;
+    selectedItem.start_time = moment(dragTime);
+    selectedItem.name = this.props.visibleGroups[newGroupOrder].title;
+
     VSTSActions.updateActivity(selectedItem);    
   }
 
@@ -182,8 +212,10 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     }
 
     let duration = moment.duration(end.diff(start)).asDays();
-    selectedItem.item.fields['CSEngineering.ActivityStartDate'] = start.toISOString();
-    selectedItem.item.fields['CSEngineering.ActivityDuration'] = duration;
+    selectedItem.start_time = start;
+    selectedItem.end_time = end;
+    selectedItem.duration = duration;
+
     VSTSActions.updateActivity(selectedItem);    
   }
 
@@ -196,22 +228,41 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     this.setState({ selectedItem: newItem });
   }
 
+  onLinkChange(value: any) {
+    if (value) {
+      this.setState({ search: value });
+    } else {
+      this.setState({ search: '' });
+    }
+  }
+
+  handleAutocomplete(value: string, index: number, matches: any[]) {
+    let { selectedItem } = this.state;
+    if (!selectedItem) { return; }
+
+    selectedItem.parentPath = value;
+    selectedItem.parentId = parseInt(value.substr(1, value.indexOf(']')), 0);
+    this.setState({ search: value, selectedItem });
+  }
+
   render() {
 
     let actions = (
       <div style={{ padding: 7 }}>
         <Button icon={true} primary={true} onClick={this.previousMonth}>keyboard_arrow_left</Button>
         <Button icon={true} primary={true} onClick={this.nextMonth}>keyboard_arrow_right</Button>
+        <Button icon={true} primary={true} onClick={this.goToToday}>today</Button>
+        <Button icon={true} primary={true} onClick={this.onCreateNewActivity}>add</Button>
       </div>
     );
 
-    let { groups, activities } = this.props;
-    if (groups.length === 0) {
-      groups = [{
+    let { visibleGroups, visibleActivities } = this.props;
+    if (visibleGroups.length === 0) {
+      visibleGroups = [{
         id: 1,
         title: 'No Activities Found'
       }];
-      activities = [{
+      visibleActivities = [{
         id: 1,
         group: 1,
         title: '',
@@ -232,8 +283,8 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
 
           sidebarContent={actions}
           groupRenderer={this.groupRenderer}
-          groups={groups}
-          items={activities}
+          groups={visibleGroups}
+          items={visibleActivities}
           selected={this.state.selectedItem && [ this.state.selectedItem.id ] || []}
 
           dragSnap={60 * 60 * 1000 * 24}
@@ -250,19 +301,32 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
         {this.state.selectedItem && (
           <div className="md-grid">
             <Card className="md-cell--12">
-              {this.state.selectedItem.id !== -1 && 
-                <CardTitle title="Edit Item" subtitle={this.getSelectedValue('System.Title')} />}
-              {this.state.selectedItem.id === -1 && 
-                <CardTitle title="Create New Item" subtitle={this.getSelectedValue('System.Title')} />}
+              <CardTitle 
+                title={this.state.selectedItem.id !== -1 ? 'Edit Item' : 'Create New Item'}
+                subtitle={'[' + this.getSelectedValue('System.Id') + '] ' + this.getSelectedValue('System.Title')}
+              />
               <CardText>
+
+                <Autocomplete
+                  id="select-organization"
+                  label="Organization / Project"
+                  placeholder="..."
+                  className="md-cell md-cell--bottom"
+                  data={this.props.projects}
+                  filter={Autocomplete.fuzzyFilter}
+                  value={this.state.search}
+                  onChange={this.onLinkChange}
+                  onAutocomplete={this.handleAutocomplete}
+                />
+
                 <TextField
-                  id="text-field-1"
+                  id="activity-title"
                   label="Title"
                   lineDirection="center"
-                  placeholder="Item title"
+                  placeholder="Acivity title"
                   className="md-cell md-cell--bottom"
-                  value={this.getSelectedValue('System.Title')}
-                  onChange={this.onFieldChange.bind(this, 'System.Title')}
+                  value={this.state.selectedItem.name}
+                  onChange={(this.onTextChange.bind(this, 'name'))}
                 />
 
                 {this.state.selectedItem.type === 'Activity' && (
@@ -274,8 +338,8 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
                       inline={true}
                       fullWidth={false}
                       autoOk={true}
-                      value={moment(this.getSelectedValue('CSEngineering.ActivityStartDate')).format('YYYY-MM-DD')}
-                      onChange={this.onDateFieldChange.bind(this, 'CSEngineering.ActivityStartDate')}
+                      value={this.state.selectedItem.start_time.format('YYYY-MM-DD')}
+                      onChange={this.onStartDateChange}
                     />
 
                     <SelectField
@@ -285,8 +349,8 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
                       className="md-cell md-cell--1"
                       menuItems={NUMBER_ITEMS}
                       simplifiedMenu={true}
-                      value={this.getSelectedValue('CSEngineering.ActivityDuration')}
-                      onChange={this.onFieldChange.bind(this, 'CSEngineering.ActivityDuration')}
+                      value={this.state.selectedItem.duration}
+                      onChange={this.onDurationChange}
                     />                
                   </div>
                 )}

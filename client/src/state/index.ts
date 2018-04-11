@@ -2,7 +2,8 @@ import SettingsStore, { SettingsContainer } from './SettingsStore';
 import SettingsActions from './SettingsActions';
 
 import VSTSStore, { ActivitiesContainer } from './VSTSStore';
-import VSTSActions, { VSTSActivity, Activity } from './VSTSActions';
+import VSTSActions from './VSTSActions';
+import { VSTSActivity, Activity } from './VSTSInterfaces';
 
 export {
   SettingsStore,
@@ -13,5 +14,6 @@ export {
   VSTSActions,
   VSTSActivity,
   Activity,
-  ActivitiesContainer
+  ActivitiesContainer,
+  
 };

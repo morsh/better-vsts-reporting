@@ -1,35 +1,48 @@
 import alt, { AbstractStoreModel } from './alt';
 import * as moment from 'moment';
 import * as _ from 'lodash';
-import VSTSActions, { Activity, ActivityGroup, ActivitiesResult, TimeRange } from './VSTSActions';
+import { getProjectHierarchy } from './VSTSHelper';
+import { Activity, ActivityGroup, VSTSData, TimeRange, ParentLinks, WorkItems, Activities } from './VSTSInterfaces';
+import VSTSActions from './VSTSActions';
 
-export interface ActivitiesContainer {
-  activities: Array<Activity>;
-  groups: Array<ActivityGroup>;
+export interface ActivitiesContainer extends VSTSData {
+  projects: Array<string>;
+  visibleActivities: Array<Activity>;
+  visibleGroups: Array<ActivityGroup>;
 }
 
 class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements ActivitiesContainer {
 
-  allActivities: Array<Activity>;
-  activities: Array<Activity>;
-  allGroups: Array<ActivityGroup>;
+  workItems: WorkItems;
+  parentLinks: ParentLinks;
+  activities: Activities;
+
   groups: Array<ActivityGroup>;
+  visibleGroups: Array<ActivityGroup>;
+
+  projects: Array<string>;
+  visibleActivities: Array<Activity>;
+  nextGroupId: number;
   from: moment.Moment;
   to: moment.Moment;
 
   constructor() {
     super();
 
-    this.allActivities = [];
-    this.activities = [];
-    this.allGroups = [];
+    this.workItems = {};
+    this.parentLinks = {};
+    this.projects = [];
     this.groups = [];
+    this.nextGroupId = 1;
+    this.activities = [];
+    this.visibleActivities = [];
+    this.visibleGroups = [];
     this.from = moment();
     this.to = moment();
 
     this.bindListeners({
-      setTimeRange: [ VSTSActions.setTimeRange ],
-      loadActivities: [ VSTSActions.loadActivities, VSTSActions.updateActivity, VSTSActions.createActivity ]
+      setTimeRange: [VSTSActions.setTimeRange],
+      loadActivities: [VSTSActions.loadActivities, VSTSActions.updateActivity, VSTSActions.createActivity]
     });
   }
 
@@ -38,20 +51,27 @@ class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements Activ
     this.to = range.to;
     this.updateVisibleActivities();
   }
+
+  loadActivities(result: VSTSData) {
+    this.workItems = result.workItems;
+    this.parentLinks = result.parentLinks;
+    this.activities = result.activities;
+    this.groups = result.groups;
+    this.nextGroupId = result.nextGroupId;
   
-  loadActivities(result: ActivitiesResult) {
-    this.allActivities = result.activities;
-    this.allGroups = result.groups;
+    this.projects = 
+      _.filter(this.activities, act => act.type === 'Organization' || act.type === 'Project or Engagement')
+      .map(act => getProjectHierarchy(act.item, result));
     this.updateVisibleActivities();
   }
 
   updateVisibleActivities() {
-    this.activities = this.allActivities.filter(act =>
+    this.visibleActivities = _.values(this.activities).filter(act =>
       (act.start_time <= this.to && act.start_time >= this.from) ||
       (act.end_time <= this.to && act.end_time >= this.from)
     );
 
-    this.groups = this.allGroups.filter(group => _.find(this.activities, { group: group.id }));
+    this.visibleGroups = this.groups.filter(group => _.find(this.visibleActivities, { group: group.id }));
   }
 }
 
