@@ -121,7 +121,7 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
   }
 
   onCreateNewActivity() {
-    let activity = createNewActivity(VSTSStore.getState(), moment(this.state.start));
+    let activity = createNewActivity(VSTSStore.getState(), moment(this.state.start), this.props.lists.user.email);
     this.setState({ selectedItem: activity });
   }
 

@@ -112,7 +112,7 @@ export function createActivity(item: VSTSActivity, data: VSTSData): Activity {
   return activity;
 }
 
-export function createNewActivity(data: VSTSData, start: moment.Moment): Activity {
+export function createNewActivity(data: VSTSData, start: moment.Moment, assignedTo: string): Activity {
   let activity = <Activity> {
     id: -1,
     rev: 0,
@@ -130,8 +130,8 @@ export function createNewActivity(data: VSTSData, start: moment.Moment): Activit
     area_path: 'CSEng\\DWR\\Reactive',
     iteration_path: 'CSEng',
     state: 'New',
-    assigned_to: 'Mor Shemesh <morshe@microsoft.com>',
-    tags: '#Tech_HCI',
+    assigned_to: assignedTo,
+    tags: '#Tech_Azure',
     
     activity_type: 'Technical qualifying and envisioning',
     country_selection: 'Israel',
