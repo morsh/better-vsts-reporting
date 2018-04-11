@@ -6,7 +6,7 @@
     "npm-run-all": "^4.1.2"
   },
   "engines": {
-    "node": "9.10.1"
+    "node": "8.11.1"
   },
   "scripts": {
     "build": "cd client && yarn build",
