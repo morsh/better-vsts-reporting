@@ -4,6 +4,7 @@ import * as H from 'history';
 import { NavigationDrawer } from 'react-md';
 import NavLink from './components/NavLink';
 import Spinner from './components/Spinner';
+import AccountEditor from './components/AccountEditor';
 
 import './App.css';
 
@@ -57,13 +58,14 @@ class App extends React.Component {
   }
 
   render() {
+
     return (
       <Route
         render={({ location }) => (
           <NavigationDrawer
-            drawerTitle="Site Navigation"
             toolbarTitle={this.getLocationTitle(location)}
             toolbarChildren={<Spinner />}
+            drawerHeaderChildren={<AccountEditor />}
             navItems={navItems.map(props => <NavLink {...props} key={props.to} />)}
           >
             <Switch key={location.key}>

@@ -335,9 +335,10 @@ router.get('/search/:query?', async (req, res) => {
   }
 });
 
-router.get('/activities', async (req, res) => {
+router.get('/activities/:user?', async (req, res) => {
 
   if (!req.user) { return res.status(500).send({ error: 'Not Authenticated' }); }
+  let { user } = req.params;
 
   try {
     let vstsWork = await connect.getWorkItemTrackingApi();
@@ -359,7 +360,7 @@ router.get('/activities', async (req, res) => {
             AND (
                 [Target].[System.TeamProject] = @project
                 AND [Target].[System.Title] <> 'Please Delete'
-                AND [Target].[System.AssignedTo] = '${req.user.upn}'
+                AND [Target].[System.AssignedTo] = '${user || req.user.upn}'
             )
         MODE (Recursive, ReturnMatchingChildren)
       `

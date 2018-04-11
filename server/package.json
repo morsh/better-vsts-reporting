@@ -1,8 +1,6 @@
 {
   "name": "server",
   "version": "0.1.0",
-  "private": true,
-  "proxy": "http://localhost:4000/",
   "engines": {
     "node": "8.11.1"
   },
@@ -19,8 +17,7 @@
     "ms-rest-azure": "^2.5.5",
     "passport": "^0.4.0",
     "passport-azure-ad": "^3.0.12",
-    "vso-node-api": "^6.3.2",
-    "xhr-request": "^1.1.0"
+    "vso-node-api": "^6.3.2"
   },
   "scripts": {
     "start": "node index.js"

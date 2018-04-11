@@ -12,6 +12,8 @@ import {
 import { createActivity, createVSTSItemForUpdate } from './VSTSHelper';
 import VSTSStore from './VSTSStore';
 import { ServerResponse } from 'http';
+import AccountActions from './AccountActions';
+import AccountStore from './AccountStore';
 let request = require('xhr-request');
 
 interface LoadActivityResults {
@@ -43,6 +45,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
         (err: Error, lists: any, status: ServerResponse) => {
           if (status.statusCode === 500) { throw lists.error || 'There was an error'; }
 
+          AccountActions.updateAccount(lists.user.email);
           return dispatcher(lists);
         }
       );
@@ -53,7 +56,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
     return (dispatcher: (result: VSTSData) => void) => {
 
       request(
-        '/api/activities', 
+        '/api/activities/' + encodeURIComponent(AccountStore.getState().accountName), 
         { json: true }, 
         (err: Error, result: LoadActivityResults, status: ServerResponse) => {
           if (status.statusCode === 500) { throw (<any> result).error || 'There was an error'; }

@@ -1,6 +1,17 @@
 import * as React from 'react';
 import * as _ from 'lodash';
-import { Card, Button, TextField, DatePicker, SelectField, CardTitle, CardText, Autocomplete, Switch } from 'react-md';
+import { 
+  Card, 
+  Button, 
+  TextField, 
+  DatePicker, 
+  SelectField, 
+  CardTitle, 
+  CardText, 
+  Autocomplete, 
+  Switch, 
+  Chip 
+} from 'react-md';
 import { VSTSActions, VSTSStore, ActivitiesContainer, Activity } from '../state';
 import { createNewActivity } from '../state/VSTSHelper';
 import connectToStores from 'alt-utils/lib/connectToStores';
@@ -96,6 +107,24 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     updateScrollCanvas(timeStart, timeEnd);
   }
 
+  getWorkPercentage(from: number, to: number): number {
+    
+    let workDays = 0;
+    let checkDay = moment(from);
+    while (checkDay.diff(to, 'days') <= 0) {
+      checkDay = checkDay.add(1, 'days');
+      // decrease "days" only if it's a weekday.
+      if (checkDay.isoWeekday() !== 6 && checkDay.isoWeekday() !== 7) {
+        workDays++;
+      }
+    }
+
+    let activityDays = 0;
+    this.props.visibleActivities.forEach(act => activityDays += act.duration);
+
+    return Math.round(activityDays / workDays * 100);
+  }
+  
   previousMonth() {
     let start = moment(this.state.start).add(-1, 'month').valueOf();
     let end = moment(this.state.start).add(-1, 'month').endOf('month').valueOf();
@@ -296,12 +325,15 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
 
   render() {
 
+    let workPercentage = this.getWorkPercentage(this.state.start, this.state.end);
+    
     let actions = (
       <div style={{ padding: 7 }}>
         <Button icon={true} primary={true} onClick={this.previousMonth}>keyboard_arrow_left</Button>
         <Button icon={true} primary={true} onClick={this.nextMonth}>keyboard_arrow_right</Button>
         <Button icon={true} primary={true} onClick={this.goToToday}>today</Button>
         <Button icon={true} primary={true} onClick={this.onCreateNewActivity}>add</Button>
+        <Chip label={workPercentage + '%'} />
       </div>
     );
 
