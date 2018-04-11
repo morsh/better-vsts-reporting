@@ -5,6 +5,9 @@
   "dependencies": {
     "npm-run-all": "^4.1.2"
   },
+  "engines": {
+    "node": "v9.10.1"
+  },
   "scripts": {
     "build": "cd client && yarn build",
     "start": "node server",
