@@ -272,6 +272,7 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
 
     let newItem = _.cloneDeep(selectedItem);
     newItem.id = newItem.item.id = newItem.item.fields['System.Id'] = -1;
+    newItem.assigned_to = this.props.lists.user.email;
     this.setState({ selectedItem: newItem });
   }
 
