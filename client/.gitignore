@@ -22,3 +22,5 @@ yarn-error.log*
 
 # build artifacts
 src/**/*.css
+
+.vscode/launch.json

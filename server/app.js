@@ -30,9 +30,9 @@ app.use('/api', apiRouter.router);
 
 app.use(express.static(path.resolve(__dirname, '..', 'build')));
 
-// // Always return the main index.html, so react-router render the route in the client
-// app.get(['/page-1'], (req, res) => {
-//   res.sendFile(path.resolve(__dirname, '..', 'build', 'index.html'));
-// });
+// Always return the main index.html, so react-router render the route in the client
+app.get(['/page-1'], (req, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'build', 'index.html'));
+});
 
 module.exports = app;
