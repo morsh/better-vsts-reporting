@@ -390,7 +390,6 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
                       onAutocomplete={this.handleAutocomplete}
                     />
 
-
                     <TextField
                       id="activity-title"
                       label="Title"

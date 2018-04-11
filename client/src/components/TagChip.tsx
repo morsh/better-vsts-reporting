@@ -13,7 +13,7 @@ export default class TagChip extends React.PureComponent<any, any> {
 
   handleRemove = () => {
     this.props.onClick(this.props.tag);
-  };
+  }
 
   render() {
     const { tag, ...props } = this.props;
@@ -21,9 +21,9 @@ export default class TagChip extends React.PureComponent<any, any> {
       <Chip
         {...props}
         onClick={this.handleRemove}
-        removable
+        removable={true}
         label={tag}
-        avatar={<Avatar random>{tag.charAt(0)}</Avatar>}
+        avatar={<Avatar random={true}>{tag.charAt(0)}</Avatar>}
       />
     );
   }

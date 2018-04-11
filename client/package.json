@@ -32,7 +32,7 @@
     "xhr-request": "^1.1.0"
   },
   "scripts": {
-    "build-css": "node-sass --include-path ./node_modules src/ -o src",
+    "build-css": "node-sass --include-path ./node_modules src/ -o src --recursive",
     "watch-css": "yarn run build-css && node-sass --include-path ./node_modules src/ -o src/ --watch --recursive",
     "start-js": "react-scripts-ts start",
     "start": "npm-run-all -p watch-css start-js",
