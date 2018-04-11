@@ -1,8 +1,17 @@
 import alt, { AbstractActions } from './alt';
 import * as _ from 'lodash';
-import { Activity, VSTSActivity, VSTSData, TimeRange, WorkItems, ParentLinks, SearchActivity } from './VSTSInterfaces';
+import { 
+  Activity, 
+  VSTSActivity, 
+  VSTSData, 
+  TimeRange, 
+  WorkItems, 
+  ParentLinks,
+  SearchResults 
+} from './VSTSInterfaces';
 import { createActivity, createVSTSItemForUpdate } from './VSTSHelper';
 import VSTSStore from './VSTSStore';
+import { ServerResponse } from 'http';
 let request = require('xhr-request');
 
 interface LoadActivityResults {
@@ -11,11 +20,13 @@ interface LoadActivityResults {
 }
 
 interface VSTSActions {
+  loadLists(): (dispatcher: (lists: any) => void) => void;
   setTimeRange(range: TimeRange): TimeRange;
   loadActivities(): (dispatcher: (result: VSTSData) => void) => void;
   updateActivity(activity: Activity): (dispatcher: (result: VSTSData) => void) => void;
   createActivity(activity: Activity): (dispatcher: (result: VSTSData) => void) => void;
-  searchActivities(search: string): (dispatcher: (activities: Array<SearchActivity>) => void) => void;
+  searchActivities(search: string): string;
+  updateSeachResults(results: SearchResults): SearchResults;
 }
 
 class VSTSActions extends AbstractActions implements VSTSActions {
@@ -24,14 +35,28 @@ class VSTSActions extends AbstractActions implements VSTSActions {
     return range;
   }
 
+  loadLists() {
+    return (dispatcher: (lists: any) => void) => {
+      request(
+        '/api/lists', 
+        { json: true }, 
+        (err: Error, lists: any, status: ServerResponse) => {
+          if (status.statusCode === 500) { throw lists.error || 'There was an error'; }
+
+          return dispatcher(lists);
+        }
+      );
+    };
+  }
+
   loadActivities() {
     return (dispatcher: (result: VSTSData) => void) => {
 
       request(
         '/api/activities', 
         { json: true }, 
-        (err: Error, result: LoadActivityResults) => {
-          if (err) { throw err; }
+        (err: Error, result: LoadActivityResults, status: ServerResponse) => {
+          if (status.statusCode === 500) { throw (<any> result).error || 'There was an error'; }
 
           let { workItems, parentLinks } = result;
           let data = <VSTSData> {
@@ -66,8 +91,8 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           json: true,
           body: { item, parentId }
         },
-        (err: Error, updatedItem: VSTSActivity) => {
-          if (err) { throw err; }
+        (err: Error, updatedItem: VSTSActivity, status: ServerResponse) => {
+          if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
 
           data = VSTSStore.getState();
           let newActivity = createActivity(updatedItem, data);
@@ -102,8 +127,8 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           json: true,
           body: { item, parentId }
         },
-        (err: Error, updatedItem: VSTSActivity) => {
-          if (err) { throw err; }
+        (err: Error, updatedItem: VSTSActivity, status: ServerResponse) => {
+          if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
 
           data = VSTSStore.getState();
           let newActivity = createActivity(updatedItem, data);
@@ -123,18 +148,33 @@ class VSTSActions extends AbstractActions implements VSTSActions {
   }
 
   searchActivities(search: string) {
-    return (dispatcher: (activities: Array<SearchActivity>) => void) => {
-      request(
-        '/api/search/' + encodeURIComponent(search), 
-        { json: true },
-        (err: Error, activities: Array<SearchActivity>) => {
-          if (err) { throw err; }
+    request(
+      '/api/search/' + encodeURIComponent(search), 
+      { json: true },
+      (err: Error, result: LoadActivityResults, status: ServerResponse) => {
+        if (status.statusCode === 500) { throw (<any> result).error || 'There was an error'; }
 
-          // the JSON result
-          return dispatcher(activities);
-        }
-      );
-    };
+        let { workItems, parentLinks } = result;
+        let data = <VSTSData> {
+          groups: [],
+          nextGroupId: 1,
+          activities: {},
+          workItems,
+          parentLinks
+        };
+        
+        _.values(workItems).map(item => createActivity(item, data)).forEach(item => data.activities[item.id] = item);
+
+        // the JSON result
+        return this.updateSeachResults(data);
+      }
+    );
+
+    return search;
+  }
+
+  updateSeachResults(result: SearchResults) {
+    return result;
   }
 }
 

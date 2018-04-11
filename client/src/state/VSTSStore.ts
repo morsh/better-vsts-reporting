@@ -2,13 +2,27 @@ import alt, { AbstractStoreModel } from './alt';
 import * as moment from 'moment';
 import * as _ from 'lodash';
 import { getProjectHierarchy } from './VSTSHelper';
-import { Activity, ActivityGroup, VSTSData, TimeRange, ParentLinks, WorkItems, Activities } from './VSTSInterfaces';
+import { 
+  Activity, 
+  ActivityGroup, 
+  VSTSData, 
+  TimeRange, 
+  ParentLinks, 
+  WorkItems, 
+  Activities, 
+  SearchResults
+} from './VSTSInterfaces';
 import VSTSActions from './VSTSActions';
 
 export interface ActivitiesContainer extends VSTSData {
   projects: Array<string>;
   visibleActivities: Array<Activity>;
   visibleGroups: Array<ActivityGroup>;
+
+  search: string;
+  searchResults: Array<string>;
+
+  lists: any;
 }
 
 class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements ActivitiesContainer {
@@ -26,6 +40,12 @@ class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements Activ
   from: moment.Moment;
   to: moment.Moment;
 
+  search: string;
+  searchResultsFull: SearchResults;
+  searchResults: Array<string>;
+
+  lists: any;
+
   constructor() {
     super();
 
@@ -40,9 +60,22 @@ class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements Activ
     this.from = moment();
     this.to = moment();
 
+    this.search = '';
+    this.searchResultsFull = { 
+      workItems: {},
+      activities: {},
+      parentLinks: {}
+    };
+    this.searchResults = [];
+
+    this.lists = {};
+
     this.bindListeners({
+      loadLists: [VSTSActions.loadLists],
       setTimeRange: [VSTSActions.setTimeRange],
-      loadActivities: [VSTSActions.loadActivities, VSTSActions.updateActivity, VSTSActions.createActivity]
+      loadActivities: [VSTSActions.loadActivities, VSTSActions.updateActivity, VSTSActions.createActivity],
+      searchActivities: [VSTSActions.searchActivities],
+      updateSeachResults: [VSTSActions.updateSeachResults],
     });
   }
 
@@ -50,6 +83,10 @@ class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements Activ
     this.from = range.from;
     this.to = range.to;
     this.updateVisibleActivities();
+  }
+
+  loadLists(lists: any) {
+    this.lists = lists;
   }
 
   loadActivities(result: VSTSData) {
@@ -72,6 +109,15 @@ class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements Activ
     );
 
     this.visibleGroups = this.groups.filter(group => _.find(this.visibleActivities, { group: group.id }));
+  }
+
+  searchActivities(search: string) {
+    this.search = search;
+  }
+
+  updateSeachResults(result: SearchResults) {
+    this.searchResultsFull = result;
+    this.searchResults = _.values(result.activities).map(res => getProjectHierarchy(res.item, result));
   }
 }
 

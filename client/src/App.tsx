@@ -3,6 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import * as H from 'history';
 import { NavigationDrawer } from 'react-md';
 import NavLink from './components/NavLink';
+import Spinner from './components/Spinner';
 
 import './App.css';
 
@@ -62,6 +63,7 @@ class App extends React.Component {
           <NavigationDrawer
             drawerTitle="Site Navigation"
             toolbarTitle={this.getLocationTitle(location)}
+            toolbarChildren={<Spinner />}
             navItems={navItems.map(props => <NavLink {...props} key={props.to} />)}
           >
             <Switch key={location.key}>

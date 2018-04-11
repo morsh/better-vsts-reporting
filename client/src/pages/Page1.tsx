@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as _ from 'lodash';
-import { Card, Button, TextField, DatePicker, SelectField, CardTitle, CardText, Autocomplete } from 'react-md';
+import { Card, Button, TextField, DatePicker, SelectField, CardTitle, CardText, Autocomplete, Switch } from 'react-md';
 import { VSTSActions, VSTSStore, ActivitiesContainer, Activity } from '../state';
 import { createNewActivity } from '../state/VSTSHelper';
 import connectToStores from 'alt-utils/lib/connectToStores';
@@ -9,6 +9,7 @@ import containerResizeDetector from 'react-calendar-timeline/lib/resize-detector
 import * as moment from 'moment';
 
 import './timeline.css';
+import TagChip from '../components/TagChip';
 
 const NUMBER_ITEMS = _.times(31, n => n + 1);
 
@@ -18,9 +19,12 @@ interface State {
   selectedItem?: Activity;
   filteredData?: any[];
   search?: string;
+  searchServer?: boolean;
 }
 
 class Page1 extends React.Component<ActivitiesContainer, State> {
+
+  private autocompleteTimeoutId: NodeJS.Timer | null = null;  
 
   static getStores(props: {}) {
     return [VSTSStore];
@@ -51,12 +55,17 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     this.onDurationChange = this.onDurationChange.bind(this);
     this.onLinkChange = this.onLinkChange.bind(this);
     this.handleAutocomplete = this.handleAutocomplete.bind(this);
+    this.onAreaChange = this.onAreaChange.bind(this);
+
+    this.removeTag = this.removeTag.bind(this);
+    this.addTag = this.addTag.bind(this);
 
     this.state = {
       start: moment('2018-09-01').startOf('month').valueOf(),
       end: moment('2018-09-01').endOf('month').valueOf(),
       filteredData: [],
-      search: ''
+      search: '',
+      searchServer: false
     };
   }
 
@@ -66,6 +75,7 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
       to: moment().endOf('month')
     });
     VSTSActions.loadActivities();
+    VSTSActions.loadLists();
   }
 
   componentDidUpdate() {
@@ -172,6 +182,14 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     }
   }
 
+  onAreaChange(value: string) {
+    let { selectedItem } = this.state;
+    if (selectedItem) {
+      selectedItem.area_path = value;
+      this.setState({ selectedItem });
+    }
+  }
+
   onItemSave() {
     if (!this.state.selectedItem) { return; }
 
@@ -229,10 +247,20 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
   }
 
   onLinkChange(value: any) {
-    if (value) {
-      this.setState({ search: value });
+    if (this.state.searchServer) {
+      this.setState({ search: value || ''});
+
+      if (this.autocompleteTimeoutId) { clearTimeout(this.autocompleteTimeoutId); }
+      this.autocompleteTimeoutId = 
+        setTimeout(
+          () => {
+            this.autocompleteTimeoutId = null;
+            VSTSActions.searchActivities(value || '');
+          }, 
+          200
+        );
     } else {
-      this.setState({ search: '' });
+      this.setState({ search: value || ''});
     }
   }
 
@@ -243,6 +271,27 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
     selectedItem.parentPath = value;
     selectedItem.parentId = parseInt(value.substr(1, value.indexOf(']')), 0);
     this.setState({ search: value, selectedItem });
+  }
+
+  removeTag(tag: string) {
+    let { selectedItem } = this.state;
+    if (!selectedItem) { return; }
+    if (!selectedItem.tags) { return; }
+    
+    tag = tag.trim();
+    selectedItem.tags = selectedItem.tags.split(';').map(t => t.trim()).filter(t => t !== tag).join(';');
+
+    this.setState({ selectedItem });
+  }
+
+  addTag(tag: string) {
+    let { selectedItem } = this.state;
+    if (!selectedItem) { return; }
+
+    if (!selectedItem.tags) { selectedItem.tags = ''; }
+
+    selectedItem.tags += ';' + tag;
+    this.setState({ selectedItem });
   }
 
   render() {
@@ -270,6 +319,14 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
         end_time: moment('2000-01-01')
       }] as any;
     }
+
+    let tagList = (
+      this.state.selectedItem && 
+      this.state.selectedItem.tags &&
+      this.state.selectedItem.tags.split(';').map(tag => tag.trim())
+    ) || [];
+    tagList = tagList.filter(tag => tag);
+    const chips = tagList.map(tag => <TagChip key={tag} tag={tag} onClick={this.removeTag} />);
 
     return (
       <div>
@@ -305,60 +362,99 @@ class Page1 extends React.Component<ActivitiesContainer, State> {
                 title={this.state.selectedItem.id !== -1 ? 'Edit Item' : 'Create New Item'}
                 subtitle={'[' + this.getSelectedValue('System.Id') + '] ' + this.getSelectedValue('System.Title')}
               />
-              <CardText>
-
-                <Autocomplete
-                  id="select-organization"
-                  label="Organization / Project"
-                  placeholder="..."
-                  className="md-cell md-cell--bottom"
-                  data={this.props.projects}
-                  filter={Autocomplete.fuzzyFilter}
-                  value={this.state.search}
-                  onChange={this.onLinkChange}
-                  onAutocomplete={this.handleAutocomplete}
-                />
-
-                <TextField
-                  id="activity-title"
-                  label="Title"
-                  lineDirection="center"
-                  placeholder="Acivity title"
-                  className="md-cell md-cell--bottom"
-                  value={this.state.selectedItem.name}
-                  onChange={(this.onTextChange.bind(this, 'name'))}
-                />
-
-                {this.state.selectedItem.type === 'Activity' && (
+              <CardText className="md-grid">
+                <div className="md-cell md-cell--6">
                   <div className="md-grid">
-                    <DatePicker
-                      id="inline-date-picker-auto"
-                      label="Select a date"
-                      className="md-cell md-cell--1"
-                      inline={true}
-                      fullWidth={false}
-                      autoOk={true}
-                      value={this.state.selectedItem.start_time.format('YYYY-MM-DD')}
-                      onChange={this.onStartDateChange}
+
+                    <Switch
+                      id="switch-search-server"
+                      className="md-cell"
+                      label="Seach VSTS"
+                      name="server"
+                      checked={this.state.searchServer}
+                      onChange={checked => {
+                        this.setState({ searchServer: checked });
+                        VSTSActions.searchActivities(this.state.search || '');
+                      }}
+                    />
+
+                    <Autocomplete
+                      id="select-organization"
+                      label="Organization / Project"
+                      placeholder="..."
+                      className="md-cell md-cell--12"
+                      data={this.state.searchServer ? this.props.searchResults : this.props.projects}
+                      filter={Autocomplete.caseInsensitiveFilter}
+                      value={this.state.search}
+                      onChange={this.onLinkChange}
+                      onAutocomplete={this.handleAutocomplete}
+                    />
+
+
+                    <TextField
+                      id="activity-title"
+                      label="Title"
+                      lineDirection="center"
+                      placeholder="Acivity title"
+                      className="md-cell md-cell--6"
+                      value={this.state.selectedItem.name}
+                      onChange={(this.onTextChange.bind(this, 'name'))}
+                    />
+
+                    {this.state.selectedItem.type === 'Activity' && (
+                        <DatePicker
+                          id="inline-date-picker-auto"
+                          label="Select a date"
+                          className="md-cell md-cell--3"
+                          inline={true}
+                          fullWidth={false}
+                          autoOk={true}
+                          value={this.state.selectedItem.start_time.format('YYYY-MM-DD')}
+                          onChange={this.onStartDateChange}
+                        />
+                    )}
+
+                    {this.state.selectedItem.type === 'Activity' && (
+                        <SelectField
+                          id="select-field-1"
+                          label="Numbers"
+                          placeholder="Placeholder"
+                          className="md-cell md-cell--3"
+                          menuItems={NUMBER_ITEMS}
+                          simplifiedMenu={true}
+                          value={this.state.selectedItem.duration}
+                          onChange={this.onDurationChange}
+                        />                
+                    )}
+
+                    <Autocomplete
+                      id="tags-autocomplete"
+                      label="Select tags"
+                      className="md-cell md-cell--3"
+                      data={this.props.lists.tags}
+                      onAutocomplete={this.addTag}
+                      clearOnAutocomplete={true}
                     />
 
                     <SelectField
-                      id="select-field-1"
-                      label="Numbers"
-                      placeholder="Placeholder"
-                      className="md-cell md-cell--1"
-                      menuItems={NUMBER_ITEMS}
-                      simplifiedMenu={true}
-                      value={this.state.selectedItem.duration}
-                      onChange={this.onDurationChange}
-                    />                
-                  </div>
-                )}
+                      id="select-field-4"
+                      label="Area"
+                      className="md-cell md-cell--3"
+                      value={this.state.selectedItem.area_path}
+                      onChange={this.onAreaChange}
+                      menuItems={this.props.lists.areas}
+                    />
 
-                <div>
-                  <Button raised={true} onClick={this.onItemSave}>Save</Button>
-                  <Button raised={true} onClick={this.onItemCancel}>Cancel</Button>
-                  <Button raised={true} onClick={this.onItemDuplicate}>Duplicate</Button>
+                    <div className="md-cell md-cell--12">
+                      {chips}
+                    </div>
+
+                    <div className="md-cell md-cell--12">
+                      <Button raised={true} onClick={this.onItemSave}>Save</Button>
+                      <Button raised={true} onClick={this.onItemCancel}>Cancel</Button>
+                      <Button raised={true} onClick={this.onItemDuplicate}>Duplicate</Button>
+                    </div>
+                  </div>
                 </div>
               </CardText>
             </Card>

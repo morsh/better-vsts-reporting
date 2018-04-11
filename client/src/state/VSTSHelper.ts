@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import { VSTSActivity, Activity, VSTSData } from './VSTSInterfaces';
+import { VSTSActivity, Activity, VSTSData, ParentLinks, WorkItems } from './VSTSInterfaces';
 
 function getGroupId(item: VSTSActivity, data: VSTSData): number {
   let groupName = item.fields['System.Title'];
@@ -46,7 +46,9 @@ function getEndDate(item: VSTSActivity): moment.Moment {
   return getStartDate(item).add(getDuration(item), 'days');
 }
 
-export function getProjectHierarchy(parent: VSTSActivity, data: VSTSData): string {
+export function getProjectHierarchy(
+  parent: VSTSActivity, 
+  data: { parentLinks: ParentLinks, workItems: WorkItems}): string {
 
   let hierarchy = '[' + parent.id + '] ' + parent.fields['System.Title'];
 

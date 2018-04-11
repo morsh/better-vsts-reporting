@@ -71,7 +71,8 @@ export interface VSTSData {
   parentLinks: ParentLinks;
 }
 
-export interface SearchActivity {
-  id: number;
-  title: string;
+export interface SearchResults {
+  activities: Activities;
+  workItems: WorkItems;
+  parentLinks: ParentLinks;
 }
