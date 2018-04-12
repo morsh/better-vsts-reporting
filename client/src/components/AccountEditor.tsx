@@ -1,7 +1,7 @@
 import * as React from 'react';
 import connectToStores from 'alt-utils/lib/connectToStores';
 
-import { TextField, Button } from 'react-md';
+import { TextField, Button, FontIcon } from 'react-md';
 
 import AccountStore, { AccountState } from '../state/AccountStore';
 import { VSTSActions } from '../state';
@@ -26,8 +26,10 @@ class AccountEditor extends React.Component<AccountState> {
       <div className="md-grid acct-edit">
 
         <TextField 
+          placeholder="Account"
           id="account-text"
           className="md-cell md-cell--10" 
+          leftIcon={<FontIcon>account_circle</FontIcon>}
           value={this.props.accountName} 
           onChange={value => AccountActions.updateAccount(value)}
         />
@@ -36,7 +38,7 @@ class AccountEditor extends React.Component<AccountState> {
           icon={true} 
           className="md-cell md-cell--1" 
           onClick={() => VSTSActions.loadActivities()}
-        >refresh
+        >play_arrow
         </Button>
 
       </div>

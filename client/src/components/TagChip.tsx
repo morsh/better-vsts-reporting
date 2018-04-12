@@ -4,10 +4,7 @@ import { Avatar, Chip } from 'react-md';
 
 export default class TagChip extends React.PureComponent<any, any> {
   static propTypes = {
-    state: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      abbreviation: PropTypes.string.isRequired,
-    }).isRequired,
+    tag: PropTypes.string.isRequired,
     onClick: PropTypes.func.isRequired,
   };
 

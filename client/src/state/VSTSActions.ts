@@ -43,6 +43,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
         '/api/lists', 
         { json: true }, 
         (err: Error, lists: any, status: ServerResponse) => {
+          if (err) { throw err; }
           if (status.statusCode === 500) { throw lists.error || 'There was an error'; }
 
           AccountActions.updateAccount(lists.user.email);
@@ -59,6 +60,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
         '/api/activities/' + encodeURIComponent(AccountStore.getState().accountName), 
         { json: true }, 
         (err: Error, result: LoadActivityResults, status: ServerResponse) => {
+          if (err) { throw err; }
           if (status.statusCode === 500) { throw (<any> result).error || 'There was an error'; }
 
           let { workItems, parentLinks } = result;
@@ -95,6 +97,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           body: { item, parentId }
         },
         (err: Error, updatedItem: VSTSActivity, status: ServerResponse) => {
+          if (err) { throw err; }
           if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
 
           data = VSTSStore.getState();
@@ -131,6 +134,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           body: { item, parentId }
         },
         (err: Error, updatedItem: VSTSActivity, status: ServerResponse) => {
+          if (err) { throw err; }
           if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
 
           data = VSTSStore.getState();
@@ -155,6 +159,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
       '/api/search/' + encodeURIComponent(search), 
       { json: true },
       (err: Error, result: LoadActivityResults, status: ServerResponse) => {
+        if (err) { throw err; }
         if (status.statusCode === 500) { throw (<any> result).error || 'There was an error'; }
 
         let { workItems, parentLinks } = result;

@@ -8,10 +8,8 @@ import AccountEditor from './components/AccountEditor';
 
 import './App.css';
 
-import Home from './pages/Home';
-import Page1 from './pages/Page1';
-import Page2 from './pages/Page2';
-import Page3 from './pages/Page3';
+import Timeline from './pages/Timeline';
+import ListActivities from './pages/ListActivities';
 
 interface NavSettings {
   exact?: boolean;
@@ -25,28 +23,16 @@ const DEFAULT_TITLE = 'Welcome';
 const navItems: NavSettings[] = [
   {
     exact: true,
-    label: 'Home',
+    label: 'Timeline',
     to: '/',
-    icon: 'home',
-    component: Home
+    icon: 'timeline',
+    component: Timeline
   },
   {
-    label: 'Page 1',
-    to: '/page-1',
-    icon: 'bookmark',
-    component: Page1
-  },
-  {
-    label: 'Page 2',
-    to: '/page-2',
-    icon: 'donut_large',
-    component: Page2
-  },
-  {
-    label: 'Page 3',
-    to: '/page-3',
-    icon: 'flight_land',
-    component: Page3
+    label: 'List Activities',
+    to: '/list',
+    icon: 'list',
+    component: ListActivities
   }
 ];
 
