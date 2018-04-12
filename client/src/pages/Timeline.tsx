@@ -54,7 +54,6 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     this.onCreateNewActivity = this.onCreateNewActivity.bind(this);
 
     this.onItemSelect = this.onItemSelect.bind(this);
-    this.onItemDoubleClick = this.onItemDoubleClick.bind(this);
     this.getSelectedValue = this.getSelectedValue.bind(this);
     this.onItemSave = this.onItemSave.bind(this);
     this.onItemCancel = this.onItemCancel.bind(this);
@@ -173,11 +172,6 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     let selectedItem = this.props.visibleActivities.find(item => item.id === itemId);
     this.setState({ selectedItem, search: selectedItem && selectedItem.parentPath || '' });
     return selectedItem;
-  }
-
-  onItemDoubleClick(itemId: number) {
-    let item = this.onItemSelect(itemId);
-    this.editItem(item);
   }
 
   groupRenderer({ group }: any) {
@@ -403,8 +397,9 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
           visibleTimeStart={this.state.start}
           visibleTimeEnd={this.state.end}
 
+          itemTouchSendsClick={true}
           onTimeChange={this.onTimeChange}
-          onItemClick={this.onItemSelect}
+          onItemSelect={this.onItemSelect}
           onItemMove={this.onItemMove}
           onItemResize={this.onItemResize}
         />
