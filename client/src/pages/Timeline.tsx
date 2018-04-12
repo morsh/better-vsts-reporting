@@ -111,16 +111,23 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     
     let workDays = 0;
     let checkDay = moment(from);
-    while (checkDay.diff(to, 'days') <= 0) {
-      checkDay = checkDay.add(1, 'days');
+    while (checkDay.diff(to, 'days') < 0) {
+
       // decrease "days" only if it's a weekday.
       if (checkDay.isoWeekday() !== 6 && checkDay.isoWeekday() !== 7) {
         workDays++;
       }
+
+      checkDay = checkDay.add(1, 'days');
     }
 
     let activityDays = 0;
-    this.props.visibleActivities.forEach(act => activityDays += act.duration);
+    this.props.visibleActivities.forEach(act => {
+      if ((act.start_time.isBetween(from, to) || act.start_time.isSame(from)) && 
+          (act.end_time.isBetween(from, to) || act.end_time.isSame(to))) {
+        activityDays += act.duration;
+      }
+    });
 
     return Math.round(activityDays / workDays * 100);
   }
