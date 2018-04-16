@@ -12,13 +12,9 @@
   background: $md-secondary-color;
 }
 
-// .react-calendar-timeline .rct-vertical-lines .rct-vl.rct-day-0 {
-//   background: #fff;
-// }
-
-// .react-calendar-timeline .rct-vertical-lines .rct-day-5 {
-//   background: rgba(250, 246, 225, 0.5);
-// }
+.react-calendar-timeline .rct-scroll {
+  overflow: hidden;
+}
 
 .project-type .md-list-item [type=project] {
   background: url(/images/project.png) no-repeat 7px center;
