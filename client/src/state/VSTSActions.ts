@@ -117,8 +117,10 @@ class VSTSActions extends AbstractActions implements VSTSActions {
             return dispatcher({ result: data, activityId: (null as any) });
           }
 
+          updatedItem.fields['System.Id'] = updatedItem.id;
+
           data = VSTSStore.getState();
-          data.parentLinks[updatedItem.id] = parentId;
+          data.parentLinks[updatedItem.id] = (parentId === -1 ? activity.parentId : parentId) || -1;
 
           let newActivity = createActivity(updatedItem, data);
           
@@ -140,7 +142,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
       let item = createVSTSItemForUpdate(activity, true);
 
       let data: VSTSData = VSTSStore.getState();
-      let parentId = activity.parentId !== data.parentLinks[activity.id] ? activity.parentId : -1;
+      let parentId = activity.parentId || -1;
 
       request(
         '/api/activities', 
