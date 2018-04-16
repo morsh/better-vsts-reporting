@@ -1,0 +1,21 @@
+.acct-edit {
+
+  width: 100%;
+  padding: 10px 10px;
+
+  .acct-edit-userName {
+    width: 80%;
+    float: left;
+  }
+
+  .acct-edit-submit {
+    width: 20%;
+    float: right;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .acct-edit {
+    padding: 5px 10px;
+  }
+}

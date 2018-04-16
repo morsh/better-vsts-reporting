@@ -461,7 +461,6 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
           visibleTimeStart={this.state.start}
           visibleTimeEnd={this.state.end}
 
-          itemTouchSendsClick={true}
           onTimeChange={this.onTimeChange}
           onItemSelect={VSTSActions.selectActivity}
           onItemMove={this.onItemMove}
@@ -545,6 +544,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                 {this.state.selectedItem.type === 'Activity' && (
                     <DatePicker
                       id="end-time"
+                      style={{ maxWidth: 25 }}
                       className="md-cell md-cell--1 md-cell--bottom md-cell--center"
                       minDate={this.state.selectedItem.start_time.toDate()}
                       maxDate={moment(this.state.selectedItem.start_time).endOf('month').toDate()}

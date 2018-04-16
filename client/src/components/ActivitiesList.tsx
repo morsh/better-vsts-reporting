@@ -10,6 +10,8 @@ import {
 } from 'react-md';
 import * as _ from 'lodash';
 
+import './activities-list.css';
+
 import VSTSStore, { ActivitiesContainer } from '../state/VSTSStore';
 import VSTSActions from 'src/state/VSTSActions';
 
@@ -74,7 +76,7 @@ class ActivitiesList extends React.Component<ActivitiesContainer, State> {
     ));
 
     return (
-      <DataTable baseId="activities">
+      <DataTable baseId="activities" className="activities-list">
         <TableHeader>
           <TableRow selectable={false}>
             <Column sorted={this.sorted('id')} onClick={this.sort.bind(this, 'id')} numeric={true}>Id</Column>

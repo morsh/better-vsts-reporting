@@ -7,6 +7,8 @@ import AccountStore, { AccountState } from '../state/AccountStore';
 import { VSTSActions } from '../state';
 import AccountActions from '../state/AccountActions';
 
+import './account.css';
+
 class AccountEditor extends React.Component<AccountState> {
 
   static getStores(props: {}) {
@@ -23,12 +25,12 @@ class AccountEditor extends React.Component<AccountState> {
 
   render () {
     return (
-      <div className="md-grid acct-edit">
+      <div className="acct-edit">
 
         <TextField 
           placeholder="Account"
           id="account-text"
-          className="md-cell md-cell--10" 
+          className="acct-edit-userName" 
           leftIcon={<FontIcon>account_circle</FontIcon>}
           value={this.props.accountName} 
           onChange={value => AccountActions.updateAccount(value)}
@@ -36,7 +38,7 @@ class AccountEditor extends React.Component<AccountState> {
 
         <Button 
           icon={true} 
-          className="md-cell md-cell--1" 
+          className="acct-edit-submit" 
           onClick={() => VSTSActions.loadActivities()}
         >play_arrow
         </Button>

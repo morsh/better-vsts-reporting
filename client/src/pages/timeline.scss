@@ -35,3 +35,10 @@
     padding-left: 20px;
   }
 }
+
+@media screen and (max-width: 560px) {
+  .react-calendar-timeline .rct-scroll {
+    position: relative;
+    z-index: 14;
+  }
+}
