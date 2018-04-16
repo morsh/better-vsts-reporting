@@ -10,9 +10,14 @@
     "name": "Launch Server",
     "program": "${workspaceRoot}/server/index.js",
     "env": {
-      "API_URL": "https://repo_name.visualstudio.com",
-      "API_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      "API_PROJECT": "project_name"
+      "API_URL": "https://cseng.visualstudio.com",
+      "API_TOKEN": "35ctrcehlo5eh2gtne73evz4ql55osl3qcxq76gwwbnyubn56kjq",
+      "API_PROJECT": "CSEng",
+      "BT_AUTH_ISSUER": "https://sts.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47/",
+      "BT_AUTH_CLIENT_SECRET": "fhmvFE+GDV9PKOXyLYYhrwq7ff90ULgxQfU4VKh6ed8=",
+      "BT_AUTH_CLIENT_ID": "dd36d7ad-2178-48b6-a271-64d1ee554fa5",
+      "BT_AUTH_ALLOW_HTTP": "true",
+      "BT_AUTH_REDIRECT_URL": "http://localhost:4000/auth/openid/return"
     },
     "outFiles": []
   },

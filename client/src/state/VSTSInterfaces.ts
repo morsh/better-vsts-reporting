@@ -52,6 +52,8 @@ export  interface Activity {
 export interface ActivityGroup {
   id: number;
   title: string;
+  parentId: number;
+  path: string;
 }
 
 export declare type WorkItems = _.NumericDictionary<VSTSActivity>;

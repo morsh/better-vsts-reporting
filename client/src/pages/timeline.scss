@@ -11,3 +11,27 @@
 .react-calendar-timeline .rct-header .rct-label-group {
   background: $md-secondary-color;
 }
+
+// .react-calendar-timeline .rct-vertical-lines .rct-vl.rct-day-0 {
+//   background: #fff;
+// }
+
+// .react-calendar-timeline .rct-vertical-lines .rct-day-5 {
+//   background: rgba(250, 246, 225, 0.5);
+// }
+
+.project-type .md-list-item [type=project] {
+  background: url(/images/project.png) no-repeat 7px center;
+
+  .md-tile-content {
+    padding-left: 20px;
+  }
+}
+
+.project-type .md-list-item [type=organization] {
+  background: url(/images/organization.png) no-repeat 7px center;
+
+  .md-tile-content {
+    padding-left: 20px;
+  }
+}

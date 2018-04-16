@@ -7,13 +7,11 @@ import {
   DatePicker, 
   SelectField, 
   CardTitle, 
-  CardText, 
   Autocomplete, 
-  Switch, 
-  Chip
+  Chip,
+  SelectionControl
 } from 'react-md';
 import { VSTSActions, VSTSStore, ActivitiesContainer, Activity } from '../state';
-import { createNewActivity } from '../state/VSTSHelper';
 import connectToStores from 'alt-utils/lib/connectToStores';
 import CalendarTimeline from 'react-calendar-timeline/lib';
 import containerResizeDetector from 'react-calendar-timeline/lib/resize-detector/container';
@@ -31,6 +29,7 @@ interface State {
   filteredData?: any[];
   search?: string;
   searchServer?: boolean;
+  askDelete?: boolean;
 }
 
 class Timeline extends React.Component<ActivitiesContainer, State> {
@@ -53,13 +52,15 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     this.goToToday = this.goToToday.bind(this);
     this.onCreateNewActivity = this.onCreateNewActivity.bind(this);
 
-    this.onItemSelect = this.onItemSelect.bind(this);
     this.getSelectedValue = this.getSelectedValue.bind(this);
     this.onItemSave = this.onItemSave.bind(this);
     this.onItemCancel = this.onItemCancel.bind(this);
     this.onItemMove = this.onItemMove.bind(this);
     this.onItemResize = this.onItemResize.bind(this);
     this.onItemDuplicate = this.onItemDuplicate.bind(this);
+    this.onDelete = this.onDelete.bind(this);
+    this.onSureDelete = this.onSureDelete.bind(this);
+    this.onCancelDelete = this.onCancelDelete.bind(this);
 
     this.onStartDateChange = this.onStartDateChange.bind(this);
     this.onDurationChange = this.onDurationChange.bind(this);
@@ -75,7 +76,8 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
       end: moment().endOf('month').valueOf(),
       filteredData: [],
       search: '',
-      searchServer: false
+      searchServer: false,
+      askDelete: false
     };
   }
 
@@ -88,6 +90,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     VSTSActions.loadLists();
   }
 
+  private visibleActivitiesCount = -1;
   componentDidUpdate() {
     let { selectedItem } = this.state;
     if (selectedItem && selectedItem.item.updating) {
@@ -95,6 +98,40 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
       if (activity && !activity.item.updating) {
         this.setState({ selectedItem: undefined });
       }
+    }
+
+    // A fix, since sometimes the activities are not displayed on the first rendering
+    if (this.props.activities && this.props.visibleActivities.length !== this.visibleActivitiesCount) {
+      this.visibleActivitiesCount = this.props.visibleActivities.length;
+      setTimeout(() => {
+        VSTSActions.setTimeRange({
+          from: moment(this.state.start),
+          to: moment(this.state.end)
+        });
+      }, 1000);
+    }
+
+    // Making sure the right activity is displayed after update
+    // Only need to update the state to display the current time
+    if (this.props.selectedActivity) {
+      let activity = this.props.selectedActivity;
+    
+      if (!this.state.selectedItem || activity.id !== this.state.selectedItem.id) {
+
+        let start = moment(activity.start_time).startOf('month').valueOf();
+        let end = moment(activity.start_time).endOf('month').valueOf();
+        if (this.state.selectedItem && this.state.selectedItem.id === -1) {
+          
+          // When a new item was created
+          this.setState({ start, end, selectedItem: undefined, search: '', askDelete: false });
+        } else {
+
+          // When a new activity was selected
+          this.setState({ start, end, selectedItem: activity, search: activity.parentPath, askDelete: false });
+        }
+      }
+    } else if (this.state.selectedItem) {
+      this.setState({  selectedItem: undefined, search: '', askDelete: false });
     }
   }
 
@@ -156,34 +193,25 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
   }
 
   onCreateNewActivity() {
-    let activity = createNewActivity(VSTSStore.getState(), moment(this.state.start), this.props.lists.user.email);
-    this.setState({ selectedItem: activity });
-  }
-
-  editItem(item?: Activity) {
-    if (item) {
-      alert(item.title);
-    } else {
-      alert('Nothing selected');
-    }
-  }
-
-  onItemSelect(itemId: number): Activity | undefined {
-    let selectedItem = this.props.visibleActivities.find(item => item.id === itemId);
-    this.setState({ selectedItem, search: selectedItem && selectedItem.parentPath || '' });
-    return selectedItem;
+    VSTSActions.createNewActivityItem(moment(this.state.start));
   }
 
   groupRenderer({ group }: any) {
     return (
       <div className="custom-group">
-        <div className="rct-sidebar-row" title={group.title}>{group.title}</div>
+        <div className="rct-sidebar-row" title={group.path}>{group.title}</div>
       </div>
     );
   }
 
-  getSelectedValue(fieldName: string): any {
-    return this.state.selectedItem && this.state.selectedItem.item.fields[fieldName] || null;
+  getSelectedValue(fieldName: string, hyperlink: boolean = false): JSX.Element {
+    let value = this.state.selectedItem && this.state.selectedItem.item.fields[fieldName] || null;
+    if (hyperlink && this.state.selectedItem && this.state.selectedItem.id > 0) {
+      return (
+        <a href={"https://cseng.visualstudio.com/CSEng/_queries?id=" + this.state.selectedItem.item.id}>{value}</a>
+      );
+    }
+    return value;
   }
 
   onTextChange(prop: string, value: string) {
@@ -234,7 +262,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
   onItemCancel() {
     if (!this.state.selectedItem) { return; }
 
-    this.setState({ selectedItem: undefined });
+    VSTSActions.unselectActivity();
   }
 
   onItemMove(itemId: number, dragTime: Date, newGroupOrder: number) {
@@ -271,10 +299,30 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     let { selectedItem } = this.state;
     if (!selectedItem) { return; }
 
-    let newItem = _.cloneDeep(selectedItem);
-    newItem.id = newItem.item.id = newItem.item.fields['System.Id'] = -1;
-    newItem.assigned_to = this.props.lists.user.email;
-    this.setState({ selectedItem: newItem });
+    VSTSActions.duplicateActivity(selectedItem.id);
+  }
+
+  onDelete() {
+    let { selectedItem } = this.state;
+    if (!selectedItem) { return; }
+
+    this.setState({ askDelete: true });
+  }
+
+  onSureDelete() {
+    let { selectedItem } = this.state;
+    if (!selectedItem) { return; }
+
+    selectedItem.name = 'Please Delete';
+    VSTSActions.updateActivity(selectedItem);
+    this.setState({ askDelete: false });
+  }
+
+  onCancelDelete() {
+    let { selectedItem } = this.state;
+    if (!selectedItem) { return; }
+
+    this.setState({ askDelete: false });
   }
 
   onLinkChange(value: any) {
@@ -345,7 +393,9 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     if (visibleGroups.length === 0) {
       visibleGroups = [{
         id: 1,
-        title: 'No Activities Found'
+        title: 'No Activities Found',
+        parentId: -1,
+        path: ''
       }];
       visibleActivities = [{
         id: 1,
@@ -399,112 +449,122 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
 
           itemTouchSendsClick={true}
           onTimeChange={this.onTimeChange}
-          onItemSelect={this.onItemSelect}
+          onItemSelect={VSTSActions.selectActivity}
           onItemMove={this.onItemMove}
           onItemResize={this.onItemResize}
         />
 
         {this.state.selectedItem && (
           <div className="md-grid">
-            <Card className="md-cell--12">
+            <Card className="md-cell--12" >
               <CardTitle 
                 title={this.state.selectedItem.id !== -1 ? 'Edit Item' : 'Create New Item'}
-                subtitle={'[' + this.getSelectedValue('System.Id') + '] ' + this.getSelectedValue('System.Title')}
+                subtitle={<p>[{this.getSelectedValue('System.Id', true)}] {this.getSelectedValue('System.Title')}</p>}
               />
-              <CardText className="md-grid">
-                <div className="md-cell md-cell--6">
-                  <div className="md-grid">
+              <div className="md-grid" style={{ maxWidth: 600, marginLeft: 0 }}>
 
-                    <Switch
-                      id="switch-search-server"
-                      className="md-cell"
-                      label="Seach VSTS"
-                      name="server"
-                      checked={this.state.searchServer}
-                      onChange={checked => {
-                        this.setState({ searchServer: checked });
-                        VSTSActions.searchActivities(this.state.search || '');
-                      }}
-                    />
+                <SelectionControl
+                  id="switch-search-server"
+                  type="switch"
+                  className="md-cell md-cell--2 md-cell--bottom"
+                  label="Full"
+                  labelBefore={true}
+                  name="server"
+                  checked={this.state.searchServer}
+                  onChange={(checked: boolean) => {
+                    this.setState({ searchServer: checked });
+                    VSTSActions.searchActivities(this.state.search || '');
+                  }}
+                />
 
-                    <Autocomplete
-                      id="select-organization"
-                      label="Organization / Project"
-                      placeholder="..."
-                      className="md-cell md-cell--12"
-                      data={this.state.searchServer ? this.props.searchResults : this.props.projects}
-                      filter={Autocomplete.caseInsensitiveFilter}
-                      value={this.state.search}
-                      onChange={this.onLinkChange}
-                      onAutocomplete={this.handleAutocomplete}
-                    />
+                <Autocomplete
+                  id="select-organization"
+                  label="Organization / Project"
+                  placeholder="..."
+                  className="md-cell md-cell--10 project-type"
+                  data={this.state.searchServer ? this.props.searchResults as any : this.props.projects as any}
+                  dataLabel="value"
+                  filter={Autocomplete.caseInsensitiveFilter}
+                  autocompleteWithLabel={true}
+                  inlineSuggestionStyle={{ background: 'red' }}
+                  value={this.state.search}
+                  onChange={this.onLinkChange}
+                  onAutocomplete={this.handleAutocomplete}
+                />
 
-                    <TextField
-                      id="activity-title"
-                      label="Title"
-                      lineDirection="center"
-                      placeholder="Acivity title"
-                      className="md-cell md-cell--6"
-                      value={this.state.selectedItem.name}
-                      onChange={(this.onTextChange.bind(this, 'name'))}
-                    />
+                <TextField
+                  id="activity-title"
+                  label="Title"
+                  lineDirection="center"
+                  placeholder="Acivity title"
+                  className="md-cell md-cell--6"
+                  value={this.state.selectedItem.name}
+                  onChange={(this.onTextChange.bind(this, 'name'))}
+                />
 
-                    {this.state.selectedItem.type === 'Activity' && (
-                        <DatePicker
-                          id="inline-date-picker-auto"
-                          label="Select a date"
-                          className="md-cell md-cell--3"
-                          inline={true}
-                          fullWidth={false}
-                          autoOk={true}
-                          value={this.state.selectedItem.start_time.format('YYYY-MM-DD')}
-                          onChange={this.onStartDateChange}
-                        />
-                    )}
-
-                    {this.state.selectedItem.type === 'Activity' && (
-                        <SelectField
-                          id="select-field-1"
-                          label="Numbers"
-                          placeholder="Placeholder"
-                          className="md-cell md-cell--3"
-                          menuItems={NUMBER_ITEMS}
-                          simplifiedMenu={true}
-                          value={this.state.selectedItem.duration}
-                          onChange={this.onDurationChange}
-                        />                
-                    )}
-
-                    <Autocomplete
-                      id="tags-autocomplete"
-                      label="Select tags"
+                {this.state.selectedItem.type === 'Activity' && (
+                    <DatePicker
+                      id="inline-date-picker-auto"
+                      label="Select a date"
                       className="md-cell md-cell--3"
-                      data={this.props.lists.tags}
-                      onAutocomplete={this.addTag}
-                      clearOnAutocomplete={true}
+                      inline={true}
+                      fullWidth={false}
+                      autoOk={true}
+                      value={this.state.selectedItem.start_time.format('YYYY-MM-DD')}
+                      onChange={this.onStartDateChange}
                     />
+                )}
 
+                {this.state.selectedItem.type === 'Activity' && (
                     <SelectField
-                      id="select-field-4"
-                      label="Area"
+                      id="select-field-1"
+                      label="Numbers"
+                      placeholder="Placeholder"
                       className="md-cell md-cell--3"
-                      value={this.state.selectedItem.area_path}
-                      onChange={this.onAreaChange}
-                      menuItems={this.props.lists.areas}
-                    />
+                      menuItems={NUMBER_ITEMS}
+                      simplifiedMenu={true}
+                      value={this.state.selectedItem.duration}
+                      onChange={this.onDurationChange}
+                    />                
+                )}
 
-                    <div className="md-cell md-cell--12">
-                      {chips}
-                    </div>
+                <Autocomplete
+                  id="tags-autocomplete"
+                  label="Select tags"
+                  className="md-cell md-cell--6"
+                  data={this.props.lists.tags}
+                  onAutocomplete={this.addTag}
+                  clearOnAutocomplete={true}
+                />
 
-                    <div className="md-cell md-cell--12">
-                      <Button raised={true} onClick={this.onItemSave} disabled={!isMyActivity}>Save</Button>
-                      <Button raised={true} onClick={this.onItemCancel}>Cancel</Button>
-                      <Button raised={true} onClick={this.onItemDuplicate}>Duplicate</Button>
-                    </div>
-                  </div>
+                <SelectField
+                  id="select-field-4"
+                  label="Area"
+                  className="md-cell md-cell--3"
+                  value={this.state.selectedItem.area_path}
+                  onChange={this.onAreaChange}
+                  menuItems={this.props.lists.areas}
+                />
+
+                <div className="md-cell md-cell--12">
+                  {chips}
                 </div>
-              </CardText>
+
+                <div className="md-cell md-cell--12">
+                  <Button raised={true} primary={true} onClick={this.onItemSave} disabled={!isMyActivity}>Save</Button>
+                  <Button raised={true} onClick={this.onItemCancel}>Cancel</Button>
+
+                  {!this.state.askDelete &&
+                    <Button raised={true} onClick={this.onItemDuplicate}>Duplicate</Button>}
+
+                  {!this.state.askDelete &&
+                    <Button raised={true} onClick={this.onDelete} disabled={!isMyActivity}>Delete</Button>}
+                  {this.state.askDelete &&
+                    <Button raised={true} onClick={this.onSureDelete} disabled={!isMyActivity}>I'm sure I want to delete</Button>}
+                  {this.state.askDelete &&
+                    <Button raised={true} onClick={this.onCancelDelete} disabled={!isMyActivity}>Don't delete</Button>}
+                </div>
+              </div>
             </Card>
           </div>
         )}

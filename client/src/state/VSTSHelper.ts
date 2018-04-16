@@ -4,13 +4,18 @@ import { VSTSActivity, Activity, VSTSData, ParentLinks, WorkItems } from './VSTS
 
 function getGroupId(item: VSTSActivity, data: VSTSData): number {
   let groupName = item.fields['System.Title'];
-  let group = _.find(data.groups, { title: groupName });
+  let group = _.find(data.groups, { title: groupName, parentId: data.parentLinks[item.id] });
   if (group) { return group.id; }
 
   let groupId = data.nextGroupId++;
+  let parent = data.parentLinks[item.id] && data.workItems[data.parentLinks[item.id]] || null;
+  let parentPath = getProjectHierarchy(parent, data, false);
+
   data.groups.push({
     id: groupId,
-    title: groupName
+    title: groupName,
+    parentId: data.parentLinks[item.id],
+    path: '[' + item.id + '] ' + (parentPath ? (parentPath + ' / ') : '') + groupName
   });
 
   return groupId;
@@ -47,17 +52,21 @@ function getEndDate(item: VSTSActivity): moment.Moment {
 }
 
 export function getProjectHierarchy(
-  parent: VSTSActivity, 
-  data: { parentLinks: ParentLinks, workItems: WorkItems}): string {
+  parent: VSTSActivity | null, 
+  data: { parentLinks: ParentLinks, workItems: WorkItems},
+  includeId: boolean = true): string {
 
-  let hierarchy = '[' + parent.id + '] ' + parent.fields['System.Title'];
+  if (!parent) { return ''; }
+
+  let idInPath = (includeId ? '[' + parent.id + '] ' : '');
+  let hierarchy = idInPath + parent.fields['System.Title'];
 
   if (parent.fields['System.WorkItemType'] === 'Project or Engagement') {
     let projectParentId = data.parentLinks[parent.id];
     if (projectParentId !== -1) {
 
       let projectParent = data.workItems[projectParentId];
-      hierarchy = '[' + parent.id + '] ' + projectParent.fields['System.Title'] + ' / ' + parent.fields['System.Title'];
+      hierarchy = idInPath + projectParent.fields['System.Title'] + ' / ' + parent.fields['System.Title'];
     }
   }
 
@@ -112,7 +121,7 @@ export function createActivity(item: VSTSActivity, data: VSTSData): Activity {
   return activity;
 }
 
-export function createNewActivity(data: VSTSData, start: moment.Moment, assignedTo: string): Activity {
+export function createNewActivity(start: moment.Moment, assignedTo: string): Activity {
   let activity = <Activity> {
     id: -1,
     rev: 0,

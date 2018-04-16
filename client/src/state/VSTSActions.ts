@@ -1,5 +1,6 @@
 import alt, { AbstractActions } from './alt';
 import * as _ from 'lodash';
+import * as moment from 'moment';
 import { 
   Activity, 
   VSTSActivity, 
@@ -9,7 +10,7 @@ import {
   ParentLinks,
   SearchResults 
 } from './VSTSInterfaces';
-import { createActivity, createVSTSItemForUpdate } from './VSTSHelper';
+import { createActivity, createVSTSItemForUpdate, createNewActivity } from './VSTSHelper';
 import VSTSStore from './VSTSStore';
 import { ServerResponse } from 'http';
 import AccountActions from './AccountActions';
@@ -25,10 +26,15 @@ interface VSTSActions {
   loadLists(): (dispatcher: (lists: any) => void) => void;
   setTimeRange(range: TimeRange): TimeRange;
   loadActivities(): (dispatcher: (result: VSTSData) => void) => void;
-  updateActivity(activity: Activity): (dispatcher: (result: VSTSData) => void) => void;
-  createActivity(activity: Activity): (dispatcher: (result: VSTSData) => void) => void;
+  updateActivity(activity: Activity): (dispatcher: (result: {result: VSTSData, activityId: number}) => void) => void;
+  createActivity(activity: Activity): (dispatcher: (result: {result: VSTSData, activityId: number}) => void) => void;
   searchActivities(search: string): string;
   updateSeachResults(results: SearchResults): SearchResults;
+
+  selectActivity(id: number): number;
+  unselectActivity(id?: number): number | null;
+  duplicateActivity(id: number): number;
+  createNewActivityItem(start: moment.Moment);
 }
 
 class VSTSActions extends AbstractActions implements VSTSActions {
@@ -81,7 +87,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
   }
 
   updateActivity(activity: Activity) {
-    return (dispatcher: (result: VSTSData) => void) => {
+    return (dispatcher: (result: {result: VSTSData, activityId: number}) => void) => {
 
       // Update item according to new properties
       let item = createVSTSItemForUpdate(activity);
@@ -100,25 +106,35 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           if (err) { throw err; }
           if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
 
+          // This item was deleted
+          if (updatedItem.fields['System.Title'] === 'Please Delete') {
+            data = VSTSStore.getState();
+            delete data.parentLinks[updatedItem.id];
+
+            delete data.activities[activity.id];
+            delete data.workItems[activity.id];
+
+            return dispatcher({ result: data, activityId: (null as any) });
+          }
+
           data = VSTSStore.getState();
+          data.parentLinks[updatedItem.id] = parentId;
+
           let newActivity = createActivity(updatedItem, data);
           
           // Replace the old activity & work item
           data.activities[activity.id] = newActivity;
           data.workItems[activity.id] = updatedItem;
 
-          // Replace old parent link
-          data.parentLinks[activity.id] = parentId;
-
           // the JSON result
-          return dispatcher(data);
+          return dispatcher({ result: data, activityId: updatedItem.id });
         }
       );
     };
   }
 
   createActivity(activity: Activity) {
-    return (dispatcher: (result: VSTSData) => void) => {
+    return (dispatcher: (result: {result: VSTSData, activityId: number}) => void) => {
 
       // Update item according to new properties
       let item = createVSTSItemForUpdate(activity, true);
@@ -137,18 +153,19 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           if (err) { throw err; }
           if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
 
+          updatedItem.fields['System.Id'] = updatedItem.id;
+
           data = VSTSStore.getState();
+          data.parentLinks[updatedItem.id] = parentId;
+
           let newActivity = createActivity(updatedItem, data);
           
           // Replace the old activity & work item
           data.activities[newActivity.id] = newActivity;
           data.workItems[newActivity.id] = updatedItem;
 
-          // Replace old parent link
-          data.parentLinks[newActivity.id] = parentId;
-
           // the JSON result
-          return dispatcher(data);
+          return dispatcher({ result: data, activityId: updatedItem.id });
         }
       );
     };
@@ -183,6 +200,22 @@ class VSTSActions extends AbstractActions implements VSTSActions {
 
   updateSeachResults(result: SearchResults) {
     return result;
+  }
+
+  selectActivity(id: number): number {
+    return id;
+  }
+
+  unselectActivity(id?: number): number | null {
+    return id || null;
+  }
+
+  duplicateActivity(id: number): number {
+    return id;
+  }
+
+  createNewActivityItem(start: moment.Moment): moment.Moment {
+    return start;
   }
 }
 
