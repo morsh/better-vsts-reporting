@@ -1,7 +1,7 @@
 import alt, { AbstractStoreModel } from './alt';
 import * as moment from 'moment';
 import * as _ from 'lodash';
-import { getProjectHierarchy, createNewActivity } from './VSTSHelper';
+import { getProjectHierarchy, createNewActivity, createActivity } from './VSTSHelper';
 import { 
   Activity, 
   ActivityGroup, 
@@ -166,12 +166,20 @@ class VSTSStore extends AbstractStoreModel<ActivitiesContainer> implements Activ
   }
 
   unselectActivity(activityId: number | null) {
+
+    // Canceling changes to activity
+    if (this.selectedActivity && this.selectedActivity.id > 0) {
+      this.activities[this.selectedActivity.id] = createActivity(this.selectedActivity.item, this);
+    }
+
     if (!activityId) {
       this.selectedActivity = null;
     } else {
       this.selectedActivity = this.activities[activityId];
       this.updateTimeRange();
     }
+
+    this.updateVisibleActivities();
   }
 
   duplicateActivity(activityId: number) {

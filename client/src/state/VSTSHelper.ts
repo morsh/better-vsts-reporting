@@ -125,7 +125,7 @@ export function createNewActivity(start: moment.Moment, assignedTo: string): Act
   let activity = <Activity> {
     id: -1,
     rev: 0,
-    item: { id: -1, rev: 0, url: '', fields: { } },
+    item: { id: -1, rev: 0, url: '', fields: { 'System.Id': -1 } },
     type: 'Activity',
     name: 'Activity Name',
     

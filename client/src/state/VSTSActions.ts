@@ -10,7 +10,7 @@ import {
   ParentLinks,
   SearchResults 
 } from './VSTSInterfaces';
-import { createActivity, createVSTSItemForUpdate, createNewActivity } from './VSTSHelper';
+import { createActivity, createVSTSItemForUpdate } from './VSTSHelper';
 import VSTSStore from './VSTSStore';
 import { ServerResponse } from 'http';
 import AccountActions from './AccountActions';

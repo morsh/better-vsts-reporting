@@ -35,6 +35,7 @@ interface State {
 class Timeline extends React.Component<ActivitiesContainer, State> {
 
   private autocompleteTimeoutId: NodeJS.Timer | null = null;  
+  private visibleActivitiesCount: number = -1;
 
   static getStores(props: {}) {
     return [VSTSStore];
@@ -63,6 +64,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     this.onCancelDelete = this.onCancelDelete.bind(this);
 
     this.onStartDateChange = this.onStartDateChange.bind(this);
+    this.onEndDateChange = this.onEndDateChange.bind(this);
     this.onDurationChange = this.onDurationChange.bind(this);
     this.onLinkChange = this.onLinkChange.bind(this);
     this.handleAutocomplete = this.handleAutocomplete.bind(this);
@@ -90,7 +92,6 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     VSTSActions.loadLists();
   }
 
-  private visibleActivitiesCount = -1;
   componentDidUpdate() {
     let { selectedItem } = this.state;
     if (selectedItem && selectedItem.item.updating) {
@@ -103,12 +104,15 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     // A fix, since sometimes the activities are not displayed on the first rendering
     if (this.props.activities && this.props.visibleActivities.length !== this.visibleActivitiesCount) {
       this.visibleActivitiesCount = this.props.visibleActivities.length;
-      setTimeout(() => {
-        VSTSActions.setTimeRange({
-          from: moment(this.state.start),
-          to: moment(this.state.end)
-        });
-      }, 1000);
+      setTimeout(
+        () => {
+          VSTSActions.setTimeRange({
+            from: moment(this.state.start),
+            to: moment(this.state.end)
+          });
+        },
+        1000
+      );
     }
 
     // Making sure the right activity is displayed after update
@@ -208,7 +212,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     let value = this.state.selectedItem && this.state.selectedItem.item.fields[fieldName] || null;
     if (hyperlink && this.state.selectedItem && this.state.selectedItem.id > 0) {
       return (
-        <a href={"https://cseng.visualstudio.com/CSEng/_queries?id=" + this.state.selectedItem.item.id}>{value}</a>
+        <a href={'https://cseng.visualstudio.com/CSEng/_queries?id=' + this.state.selectedItem.item.id}>{value}</a>
       );
     }
     return value;
@@ -227,6 +231,16 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     if (selectedItem) {
       selectedItem.start_time = moment(value, 'MM/DD/YYYY');
       selectedItem.end_time = moment(selectedItem.start_time).add(selectedItem.duration, 'days');
+      this.setState({ selectedItem });
+    }
+  }
+
+  onEndDateChange(value: string) {
+    let { selectedItem } = this.state;
+    if (selectedItem) {
+      let duration = moment.duration(moment(value, 'MM/DD/YYYY').diff(selectedItem.start_time)).asDays() + 1;
+      selectedItem.duration = duration;
+      selectedItem.end_time = moment(selectedItem.start_time).add(duration, 'days');
       this.setState({ selectedItem });
     }
   }
@@ -505,7 +519,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                 {this.state.selectedItem.type === 'Activity' && (
                     <DatePicker
                       id="inline-date-picker-auto"
-                      label="Select a date"
+                      label="Start"
                       className="md-cell md-cell--3"
                       inline={true}
                       fullWidth={false}
@@ -518,14 +532,26 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                 {this.state.selectedItem.type === 'Activity' && (
                     <SelectField
                       id="select-field-1"
-                      label="Numbers"
+                      label="Duration"
                       placeholder="Placeholder"
-                      className="md-cell md-cell--3"
+                      className="md-cell md-cell--2"
                       menuItems={NUMBER_ITEMS}
                       simplifiedMenu={true}
                       value={this.state.selectedItem.duration}
                       onChange={this.onDurationChange}
-                    />                
+                    />
+                )}
+
+                {this.state.selectedItem.type === 'Activity' && (
+                    <DatePicker
+                      id="end-time"
+                      className="md-cell md-cell--1 md-cell--bottom md-cell--center"
+                      minDate={this.state.selectedItem.start_time.toDate()}
+                      maxDate={moment(this.state.selectedItem.start_time).endOf('month').toDate()}
+                      value={moment(this.state.selectedItem.end_time).add(-1, 'day').format('YYYY-MM-DD')}
+                      autoOk={true}
+                      onChange={this.onEndDateChange}
+                    />
                 )}
 
                 <Autocomplete
@@ -560,7 +586,9 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                   {!this.state.askDelete &&
                     <Button raised={true} onClick={this.onDelete} disabled={!isMyActivity}>Delete</Button>}
                   {this.state.askDelete &&
-                    <Button raised={true} onClick={this.onSureDelete} disabled={!isMyActivity}>I'm sure I want to delete</Button>}
+                    <Button raised={true} onClick={this.onSureDelete} disabled={!isMyActivity}>
+                      I'm sure I want to delete
+                    </Button>}
                   {this.state.askDelete &&
                     <Button raised={true} onClick={this.onCancelDelete} disabled={!isMyActivity}>Don't delete</Button>}
                 </div>

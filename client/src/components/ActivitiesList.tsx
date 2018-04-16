@@ -14,8 +14,8 @@ import VSTSStore, { ActivitiesContainer } from '../state/VSTSStore';
 import VSTSActions from 'src/state/VSTSActions';
 
 interface State {
-  ascending: boolean,
-  field: string
+  ascending: boolean;
+  field: string;
 }
 
 class ActivitiesList extends React.Component<ActivitiesContainer, State> {
@@ -48,14 +48,14 @@ class ActivitiesList extends React.Component<ActivitiesContainer, State> {
     }
 
     this.setState({ ascending, field });
-  };
+  }
 
   sorted = (field: string): boolean | undefined => {
     if (field && field === this.state.field) {
       return this.state.ascending;
     }
     return undefined;
-  };
+  }
 
   render () {
 
