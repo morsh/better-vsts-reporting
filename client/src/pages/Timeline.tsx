@@ -9,7 +9,8 @@ import {
   CardTitle, 
   Autocomplete, 
   Chip,
-  SelectionControl
+  SelectionControl,
+  Tooltipped
 } from 'react-md';
 import { VSTSActions, VSTSStore, ActivitiesContainer, Activity } from '../state';
 import connectToStores from 'alt-utils/lib/connectToStores';
@@ -202,20 +203,50 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
 
   groupRenderer({ group }: any) {
     return (
-      <div className="custom-group">
+      <div className="timeline-group">
         <div className="rct-sidebar-row" title={group.path}>{group.title}</div>
       </div>
+    );
+  }
+
+  itemRenderer = ({ item }: { item: Activity }) => {
+
+    let tooltip = (
+      <span style={{ textAlign: 'left' }}>
+        <div>{item.parentPath}</div>
+        <div style={{ paddingLeft: 20 }}>[{item.id}] {item.name}</div>
+      </span>
+    );
+
+    return (
+      <Tooltipped
+        label={tooltip}
+        position="top"
+        setPosition={true}
+      >
+        <div 
+          className="timeline-item"
+          data-item-id={item.id}
+          onClick={e => VSTSActions.selectActivity(parseInt(e.currentTarget.getAttribute('data-item-id') || '', 0))}
+        >
+          <span className="title">{item.title}</span>
+        </div>
+      </Tooltipped>
     );
   }
 
   getSelectedValue(fieldName: string, hyperlink: boolean = false): JSX.Element {
     let value = this.state.selectedItem && this.state.selectedItem.item.fields[fieldName] || null;
     if (hyperlink && this.state.selectedItem && this.state.selectedItem.id > 0) {
-      return (
-        <a href={'https://cseng.visualstudio.com/CSEng/_queries?id=' + this.state.selectedItem.item.id}>{value}</a>
-      );
+      return this.getActivityLink(this.state.selectedItem, value);
     }
     return value;
+  }
+
+  getActivityLink = (activity: Activity, value: string | null = null) => {
+    return (
+      <a href={'https://cseng.visualstudio.com/CSEng/_queries?id=' + activity.id}>{value || activity.id}</a>
+    );
   }
 
   onTextChange(prop: string, value: string) {
@@ -452,6 +483,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
 
           sidebarContent={actions}
           groupRenderer={this.groupRenderer}
+          itemRenderer={this.itemRenderer}
           groups={visibleGroups}
           items={visibleActivities}
           selected={this.state.selectedItem && [ this.state.selectedItem.id ] || []}
@@ -462,7 +494,6 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
           visibleTimeEnd={this.state.end}
 
           onTimeChange={this.onTimeChange}
-          onItemSelect={VSTSActions.selectActivity}
           onItemMove={this.onItemMove}
           onItemResize={this.onItemResize}
         />
