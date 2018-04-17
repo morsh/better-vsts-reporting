@@ -32,6 +32,9 @@ app.use(express.static(path.resolve(__dirname, '..', 'build')));
 
 // Always return the main index.html, so react-router render the route in the client
 app.get('*', (req, res) => {
+  res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  res.header('Expires', '-1');
+  res.header('Pragma', 'no-cache');
   res.sendFile(path.resolve(__dirname, '..', 'build', 'index.html'));
 });
 

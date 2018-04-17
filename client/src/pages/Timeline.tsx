@@ -6,7 +6,6 @@ import {
   TextField, 
   DatePicker, 
   SelectField, 
-  CardTitle, 
   Autocomplete, 
   Chip,
   SelectionControl,
@@ -218,16 +217,18 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
       </span>
     );
 
+    let position: 'right' | 'left' = item.start_time.date() < 15 ? 'right' : 'left';
+
     return (
       <Tooltipped
         label={tooltip}
-        position="top"
-        setPosition={true}
+        position={position}
       >
         <div 
           className="timeline-item"
           data-item-id={item.id}
           onClick={e => VSTSActions.selectActivity(parseInt(e.currentTarget.getAttribute('data-item-id') || '', 0))}
+          onTouchEnd={e => VSTSActions.selectActivity(parseInt(e.currentTarget.getAttribute('data-item-id') || '', 0))}
         >
           <span className="title">{item.title}</span>
         </div>
@@ -501,11 +502,12 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
         {this.state.selectedItem && (
           <div className="md-grid">
             <Card className="md-cell--12" >
-              <CardTitle 
-                title={this.state.selectedItem.id !== -1 ? 'Edit Item' : 'Create New Item'}
-                subtitle={<p>[{this.getSelectedValue('System.Id', true)}] {this.getSelectedValue('System.Title')}</p>}
-              />
               <div className="md-grid" style={{ maxWidth: 600, marginLeft: 0 }}>
+
+                <div className="timeline-title md-cell md-cell--12">
+                  <h2>{this.state.selectedItem.id !== -1 ? 'Edit Item' : 'Create New Item'}</h2>
+                  <h3>{<p>[{this.getSelectedValue('System.Id', true)}] {this.getSelectedValue('System.Title')}</p>}</h3>
+                </div>
 
                 <SelectionControl
                   id="switch-search-server"

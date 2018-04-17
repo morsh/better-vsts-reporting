@@ -51,6 +51,18 @@
   }
 }
 
+.timeline-title {
+  margin-bottom: 0;
+
+  h2 {
+    margin-bottom: 5px;
+  }
+
+  h3 {
+    margin-bottom: 0;
+  }
+}
+
 @media screen and (max-width: 560px) {
   .react-calendar-timeline .rct-scroll {
     position: relative;

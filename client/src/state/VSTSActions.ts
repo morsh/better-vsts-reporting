@@ -15,6 +15,7 @@ import VSTSStore from './VSTSStore';
 import { ServerResponse } from 'http';
 import AccountActions from './AccountActions';
 import AccountStore from './AccountStore';
+import { setTimeout } from 'timers';
 let request = require('xhr-request');
 
 interface LoadActivityResults {
@@ -39,11 +40,45 @@ interface VSTSActions {
 
 class VSTSActions extends AbstractActions implements VSTSActions {
 
+  private loadListsTimeoutHandle?: NodeJS.Timer;
+
   setTimeRange(range: TimeRange) {
     return range;
   }
 
   loadLists() {
+
+    if (typeof this.loadListsTimeoutHandle !== 'undefined') {
+      clearTimeout(this.loadListsTimeoutHandle);
+    }
+
+    this.loadListsTimeoutHandle = setTimeout(
+      () => {
+        if (window.location.host === 'localhost:3000') {
+          let iframe = document.createElement('iframe');
+          iframe.style.display = 'block';
+          iframe.style.top = '0';
+          iframe.style.zIndex = '20';
+          iframe.style.position = 'absolute';
+          iframe.src = 'http://localhost:4000';
+          iframe.style.width = '300px';
+          iframe.style.height = '300px';
+          
+          iframe.onload = () => {
+            if (typeof this.loadListsTimeoutHandle !== 'undefined') {
+              window.location.reload(true);
+            } else {
+              iframe.remove();
+            }
+          };
+          document.body.appendChild(iframe);
+        } else {
+          window.location.replace('/auth/login?redirect_uri=%2f');
+        }
+      },
+      3000
+    );
+    
     return (dispatcher: (lists: any) => void) => {
       request(
         '/api/lists', 
@@ -51,6 +86,11 @@ class VSTSActions extends AbstractActions implements VSTSActions {
         (err: Error, lists: any, status: ServerResponse) => {
           if (err) { throw err; }
           if (status.statusCode === 500) { throw lists.error || 'There was an error'; }
+
+          if (typeof this.loadListsTimeoutHandle !== 'undefined') {
+            clearTimeout(this.loadListsTimeoutHandle);
+            this.loadListsTimeoutHandle = undefined;
+          }
 
           AccountActions.updateAccount(lists.user.email);
           return dispatcher(lists);
