@@ -54,6 +54,9 @@ class VSTSActions extends AbstractActions implements VSTSActions {
 
     this.loadListsTimeoutHandle = setTimeout(
       () => {
+
+        if (typeof this.loadListsTimeoutHandle === 'undefined') { return; }
+
         if (window.location.host === 'localhost:3000') {
           let iframe = document.createElement('iframe');
           iframe.style.display = 'block';
