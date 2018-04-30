@@ -28,7 +28,7 @@ function findByEmail(email, fn) {
   for (var i = 0, len = users.length; i < len; i++) {
     let user = users[i];
     
-    console.info(`Current logged in user: ${user}`);
+    console.info(`Current logged in user: ${user && user.email || '???'}`);
     if (user.email === email) {
       return fn(null, user);
     }

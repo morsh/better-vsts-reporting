@@ -16,6 +16,7 @@ import { ServerResponse } from 'http';
 import AccountActions from './AccountActions';
 import AccountStore from './AccountStore';
 import { setTimeout } from 'timers';
+import ToastActions from './ToastActions';
 let request = require('xhr-request');
 
 interface LoadActivityResults {
@@ -44,6 +45,22 @@ class VSTSActions extends AbstractActions implements VSTSActions {
 
   setTimeRange(range: TimeRange) {
     return range;
+  }
+
+  checkForError(error: Error, response: any, status: ServerResponse): boolean {
+
+    if (error || status.statusCode === 500) { 
+      ToastActions.showMessage(
+        'Error: ' +
+        ((error && error.toString()) || '') +
+        (status.statusMessage || '') +
+        (response.error || 'There was an error')
+      );
+
+      return true;
+    }
+
+    return false;
   }
 
   loadLists() {
@@ -87,8 +104,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
         '/api/lists', 
         { json: true }, 
         (err: Error, lists: any, status: ServerResponse) => {
-          if (err) { throw err; }
-          if (status.statusCode === 500) { throw lists.error || 'There was an error'; }
+          if (this.checkForError(err, lists, status)) { return; }
 
           if (typeof this.loadListsTimeoutHandle !== 'undefined') {
             clearTimeout(this.loadListsTimeoutHandle);
@@ -109,8 +125,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
         '/api/activities/' + encodeURIComponent(AccountStore.getState().accountName), 
         { json: true }, 
         (err: Error, result: LoadActivityResults, status: ServerResponse) => {
-          if (err) { throw err; }
-          if (status.statusCode === 500) { throw (<any> result).error || 'There was an error'; }
+          if (this.checkForError(err, result, status)) { return; }
 
           let { workItems, parentLinks } = result;
           let data = <VSTSData> {
@@ -146,8 +161,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           body: { item, parentId }
         },
         (err: Error, updatedItem: VSTSActivity, status: ServerResponse) => {
-          if (err) { throw err; }
-          if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
+          if (this.checkForError(err, updatedItem, status)) { return; }
 
           // This item was deleted
           if (updatedItem.fields['System.Title'] === 'Please Delete') {
@@ -170,6 +184,8 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           // Replace the old activity & work item
           data.activities[activity.id] = newActivity;
           data.workItems[activity.id] = updatedItem;
+
+          ToastActions.showMessage(`Item "[${activity.id}] ${activity.name}" was updated successfully`);
 
           // the JSON result
           return dispatcher({ result: data, activityId: updatedItem.id });
@@ -195,8 +211,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           body: { item, parentId }
         },
         (err: Error, updatedItem: VSTSActivity, status: ServerResponse) => {
-          if (err) { throw err; }
-          if (status.statusCode === 500) { throw (<any> updatedItem).error || 'There was an error'; }
+          if (this.checkForError(err, updatedItem, status)) { return; }
 
           updatedItem.fields['System.Id'] = updatedItem.id;
 
@@ -209,6 +224,8 @@ class VSTSActions extends AbstractActions implements VSTSActions {
           data.activities[newActivity.id] = newActivity;
           data.workItems[newActivity.id] = updatedItem;
 
+          ToastActions.showMessage(`Item "[${activity.id}] ${activity.name}" was created successfully`);
+          
           // the JSON result
           return dispatcher({ result: data, activityId: updatedItem.id });
         }
@@ -221,8 +238,7 @@ class VSTSActions extends AbstractActions implements VSTSActions {
       '/api/search/' + encodeURIComponent(search), 
       { json: true },
       (err: Error, result: LoadActivityResults, status: ServerResponse) => {
-        if (err) { throw err; }
-        if (status.statusCode === 500) { throw (<any> result).error || 'There was an error'; }
+        if (this.checkForError(err, result, status)) { return; }
 
         let { workItems, parentLinks } = result;
         let data = <VSTSData> {

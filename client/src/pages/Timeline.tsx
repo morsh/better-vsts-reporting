@@ -203,7 +203,9 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
   groupRenderer({ group }: any) {
     return (
       <div className="timeline-group">
-        <div className="rct-sidebar-row" title={group.path}>{group.title}</div>
+        <div className="rct-sidebar-row" title={group.path}>
+          {group.title}{group.type === 'Participant' ? ' [Participant]' : ''}
+        </div>
       </div>
     );
   }
@@ -316,6 +318,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     if (!selectedItem) { return; }
 
     selectedItem.start_time = moment(dragTime);
+    selectedItem.end_time = moment(dragTime).add(selectedItem.duration, 'days');
     selectedItem.name = this.props.visibleGroups[newGroupOrder].title;
 
     VSTSActions.updateActivity(selectedItem);    
@@ -439,6 +442,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     if (visibleGroups.length === 0) {
       visibleGroups = [{
         id: 1,
+        type: '',
         title: 'No Activities Found',
         parentId: -1,
         path: ''
@@ -461,6 +465,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     const chips = tagList.map(tag => <TagChip key={tag} tag={tag} onClick={this.removeTag} />);
 
     let isMyActivity = false;
+    let itemType: string = '';
     if (this.state.selectedItem) {
       let assignedTo = this.state.selectedItem.assigned_to || '';
       let atOpen = assignedTo.indexOf('<');
@@ -469,7 +474,14 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
         assignedTo = assignedTo.substr(atOpen + 1, atClose - atOpen - 1);
       }
       isMyActivity = assignedTo === this.props.lists.user.email || false;
+
+      itemType = this.state.selectedItem.type;
     }
+
+    // let isActivity = itemType === 'Activity';
+    // let isOrganization = itemType === 'Organization';
+    // let isProject = itemType === 'Project or Engagement';
+    let isParticipant = itemType === 'Participant';
     
     return (
       <div>
@@ -506,7 +518,12 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
 
                 <div className="timeline-title md-cell md-cell--12">
                   <h2>{this.state.selectedItem.id !== -1 ? 'Edit Item' : 'Create New Item'}</h2>
-                  <h3>{<p>[{this.getSelectedValue('System.Id', true)}] {this.getSelectedValue('System.Title')}</p>}</h3>
+                  <h3>
+                    {<p>
+                      [{this.getSelectedValue('System.Id', true)}] {this.getSelectedValue('System.Title')}
+                       {isParticipant ? ' - Participant' : ''}
+                    </p>}
+                  </h3>
                 </div>
 
                 <SelectionControl

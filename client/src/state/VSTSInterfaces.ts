@@ -53,6 +53,7 @@ export interface ActivityGroup {
   id: number;
   title: string;
   parentId: number;
+  type: string;
   path: string;
 }
 

@@ -29,3 +29,4 @@ client/**/*.css
 .vscode/launch.json
 
 server/index2.js
+/client/__node_modules

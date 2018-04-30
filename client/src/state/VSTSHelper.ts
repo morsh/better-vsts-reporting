@@ -14,6 +14,7 @@ function getGroupId(item: VSTSActivity, data: VSTSData): number {
   data.groups.push({
     id: groupId,
     title: groupName,
+    type: item.fields['System.WorkItemType'],
     parentId: data.parentLinks[item.id],
     path: '[' + item.id + '] ' + (parentPath ? (parentPath + ' / ') : '') + groupName
   });

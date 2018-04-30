@@ -5,6 +5,9 @@ const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
+
+require('dotenv').config()
+
 const bodyParser = require('body-parser');
 const apiRouter = require('./routes/api');
 const authRouter = require('./routes/auth');

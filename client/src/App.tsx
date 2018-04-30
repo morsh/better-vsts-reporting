@@ -10,6 +10,7 @@ import './App.css';
 
 import Timeline from './pages/Timeline';
 import ListActivities from './pages/ListActivities';
+import ToastBar from './components/ToastBar';
 
 interface NavSettings {
   exact?: boolean;
@@ -67,6 +68,7 @@ class App extends React.Component {
                 ))
               }
             </Switch>
+            <ToastBar />            
           </NavigationDrawer>
         )}
       />
