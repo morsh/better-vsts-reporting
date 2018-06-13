@@ -223,9 +223,25 @@ router.get('/lists', async (req, res) => {
     "CSEng\\GISV Industry"
   ];
 
+  let activityTypes = [
+    "Coding and Testing",
+    "Demand Generation and Marketing",
+    "Design session or Review",
+    "Engineering Feedback",
+    "Evangelism In-Person Attend (Community Event, Booth)",
+    "Evangelism In-Person Present (Technical Presentation, Speaking)",
+    "Evangelism Online (Blogs, Podcasts, Articles, Social Media)",
+    "Hackfest",
+    "Internal Administration and Management - General",
+    "Personal Development, Upskilling and Training",
+    "Technical Account and Program Management",
+    "Technical qualifying and envisioning",
+    "Unavailable"
+  ];
+
   let vstsWork = await connect.getWorkItemTrackingApi();
   
-  res.send({ tags, areas, user: {
+  res.send({ tags, areas, activityTypes, user: {
     displayName: req.user.displayName,
     email: req.user.email
   } });

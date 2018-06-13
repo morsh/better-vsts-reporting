@@ -66,6 +66,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     this.onStartDateChange = this.onStartDateChange.bind(this);
     this.onEndDateChange = this.onEndDateChange.bind(this);
     this.onDurationChange = this.onDurationChange.bind(this);
+    this.onActivityTypeChange = this.onActivityTypeChange.bind(this);
     this.onLinkChange = this.onLinkChange.bind(this);
     this.handleAutocomplete = this.handleAutocomplete.bind(this);
     this.onAreaChange = this.onAreaChange.bind(this);
@@ -284,6 +285,14 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     if (selectedItem) {
       selectedItem.duration = parseInt(value, 0);
       selectedItem.end_time = moment(selectedItem.start_time).add(selectedItem.duration, 'days');
+      this.setState({ selectedItem });
+    }
+  }
+
+  onActivityTypeChange(value: string) {
+    let { selectedItem } = this.state;
+    if (selectedItem) {
+      selectedItem.activity_type = value;
       this.setState({ selectedItem });
     }
   }
@@ -613,18 +622,31 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                   clearOnAutocomplete={true}
                 />
 
+                <div className="md-cell md-cell--12">
+                  {chips}
+                </div>
+
                 <SelectField
                   id="select-field-4"
                   label="Area"
-                  className="md-cell md-cell--3"
+                  className="md-cell md-cell--6"
                   value={this.state.selectedItem.area_path}
                   onChange={this.onAreaChange}
                   menuItems={this.props.lists.areas}
                 />
 
-                <div className="md-cell md-cell--12">
-                  {chips}
-                </div>
+                {this.state.selectedItem.type === 'Activity' && (
+                    <SelectField
+                      id="select-field-5"
+                      label="Activity Type"
+                      placeholder="Placeholder"
+                      className="md-cell md-cell--6"
+                      menuItems={this.props.lists.activityTypes}
+                      simplifiedMenu={true}
+                      value={this.state.selectedItem.activity_type}
+                      onChange={this.onActivityTypeChange}
+                    />
+                )}
 
                 <div className="md-cell md-cell--12">
                   <Button raised={true} primary={true} onClick={this.onItemSave} disabled={!isMyActivity}>Save</Button>
