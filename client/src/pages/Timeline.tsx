@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { inject, observer } from 'mobx-react';
 import * as _ from 'lodash';
 import { 
   Card, 
@@ -11,8 +12,7 @@ import {
   SelectionControl,
   Tooltipped
 } from 'react-md';
-import { VSTSActions, VSTSStore, ActivitiesContainer, Activity } from '../state';
-import connectToStores from 'alt-utils/lib/connectToStores';
+import { VSTSStore, Activity } from '../state/VSTS';
 import CalendarTimeline from 'react-calendar-timeline/lib';
 import containerResizeDetector from 'react-calendar-timeline/lib/resize-detector/container';
 import * as moment from 'moment';
@@ -32,21 +32,23 @@ interface State {
   askDelete?: boolean;
 }
 
-class Timeline extends React.Component<ActivitiesContainer, State> {
+interface IProps {
+  vstsStore?: VSTSStore;
+}
+
+@inject('vstsStore')
+@observer
+export default class Timeline extends React.Component<IProps, State> {
+
+  vstsStore: VSTSStore;
 
   private autocompleteTimeoutId: NodeJS.Timer | null = null;  
   private visibleActivitiesCount: number = -1;
 
-  static getStores(props: {}) {
-    return [VSTSStore];
-  }
-
-  static getPropsFromStores(props: {}) {
-      return VSTSStore.getState();
-  }
-
-  constructor(props: ActivitiesContainer) {
+  constructor(props: IProps) {
     super(props);
+
+    this.vstsStore = props.vstsStore!;
 
     this.previousMonth = this.previousMonth.bind(this);
     this.nextMonth = this.nextMonth.bind(this);
@@ -70,6 +72,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     this.onLinkChange = this.onLinkChange.bind(this);
     this.handleAutocomplete = this.handleAutocomplete.bind(this);
     this.onAreaChange = this.onAreaChange.bind(this);
+    this.onTimeChange = this.onTimeChange.bind(this);
 
     this.removeTag = this.removeTag.bind(this);
     this.addTag = this.addTag.bind(this);
@@ -85,29 +88,29 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
   }
 
   componentWillMount() {
-    VSTSActions.setTimeRange({
+    this.vstsStore.setTimeRange({
       from: moment().startOf('month'), 
       to: moment().endOf('month')
     });
-    VSTSActions.loadActivities();
-    VSTSActions.loadLists();
+    this.vstsStore.loadActivities();
+    this.vstsStore.loadLists();
   }
 
   componentDidUpdate() {
     let { selectedItem } = this.state;
     if (selectedItem && selectedItem.item.updating) {
-      let activity = _.find(this.props.visibleActivities, { id: selectedItem.id });
+      let activity = _.find(this.vstsStore.visibleActivities, { id: selectedItem.id });
       if (activity && !activity.item.updating) {
         this.setState({ selectedItem: undefined });
       }
     }
 
     // A fix, since sometimes the activities are not displayed on the first rendering
-    if (this.props.activities && this.props.visibleActivities.length !== this.visibleActivitiesCount) {
-      this.visibleActivitiesCount = this.props.visibleActivities.length;
+    if (this.vstsStore.activities && this.vstsStore.visibleActivities.length !== this.visibleActivitiesCount) {
+      this.visibleActivitiesCount = this.vstsStore.visibleActivities.length;
       setTimeout(
         () => {
-          VSTSActions.setTimeRange({
+          this.vstsStore.setTimeRange({
             from: moment(this.state.start),
             to: moment(this.state.end)
           });
@@ -118,8 +121,8 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
 
     // Making sure the right activity is displayed after update
     // Only need to update the state to display the current time
-    if (this.props.selectedActivity) {
-      let activity = this.props.selectedActivity;
+    if (this.vstsStore.selectedActivity) {
+      let activity = this.vstsStore.selectedActivity;
     
       if (!this.state.selectedItem || activity.id !== this.state.selectedItem.id) {
 
@@ -141,7 +144,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
   }
 
   onTimeChange(timeStart: number, timeEnd: number, updateScrollCanvas: (start: number, end: number) => void) {
-    VSTSActions.setTimeRange({
+    this.vstsStore.setTimeRange({
       from: moment(timeStart),
       to: moment(timeEnd)
     });
@@ -163,7 +166,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     }
 
     let activityDays = 0;
-    this.props.visibleActivities.forEach(act => {
+    this.vstsStore.visibleActivities.forEach(act => {
       if ((act.start_time.isBetween(from, to) || act.start_time.isSame(from)) && 
           (act.end_time.isBetween(from, to) || act.end_time.isSame(to))) {
         activityDays += act.duration;
@@ -178,7 +181,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     let end = moment(this.state.start).add(-1, 'month').endOf('month').valueOf();
 
     this.setState({ start, end });
-    VSTSActions.setTimeRange({ from: moment(start), to: moment(end) });
+    this.vstsStore.setTimeRange({ from: moment(start), to: moment(end) });
   }
 
   nextMonth() {
@@ -186,7 +189,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     let end = moment(this.state.start).add(1, 'month').endOf('month').valueOf();
 
     this.setState({ start, end });
-    VSTSActions.setTimeRange({ from: moment(start), to: moment(end) });
+    this.vstsStore.setTimeRange({ from: moment(start), to: moment(end) });
   }
 
   goToToday() {
@@ -194,11 +197,11 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     let end = moment().endOf('month').valueOf();
 
     this.setState({ start, end });
-    VSTSActions.setTimeRange({ from: moment(start), to: moment(end) });
+    this.vstsStore.setTimeRange({ from: moment(start), to: moment(end) });
   }
 
   onCreateNewActivity() {
-    VSTSActions.createNewActivityItem(moment(this.state.start));
+    this.vstsStore.createNewActivityItem(moment(this.state.start));
   }
 
   groupRenderer({ group }: any) {
@@ -230,8 +233,9 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
         <div 
           className="timeline-item"
           data-item-id={item.id}
-          onClick={e => VSTSActions.selectActivity(parseInt(e.currentTarget.getAttribute('data-item-id') || '', 0))}
-          onTouchEnd={e => VSTSActions.selectActivity(parseInt(e.currentTarget.getAttribute('data-item-id') || '', 0))}
+          onClick={e => this.vstsStore.selectActivity(parseInt(e.currentTarget.getAttribute('data-item-id') || '', 0))}
+          onTouchEnd={e => 
+            this.vstsStore.selectActivity(parseInt(e.currentTarget.getAttribute('data-item-id') || '', 0))}
         >
           <span className="title">{item.title}</span>
         </div>
@@ -310,16 +314,16 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
 
     this.state.selectedItem.item.updating = true;
     if (this.state.selectedItem.id === -1) {
-      VSTSActions.createActivity(this.state.selectedItem);
+      this.vstsStore.createActivity(this.state.selectedItem);
     } else {
-      VSTSActions.updateActivity(this.state.selectedItem);
+      this.vstsStore.updateActivity(this.state.selectedItem);
     }
   }
 
   onItemCancel() {
     if (!this.state.selectedItem) { return; }
 
-    VSTSActions.unselectActivity();
+    this.vstsStore.unselectActivity();
   }
 
   onItemMove(itemId: number, dragTime: Date, newGroupOrder: number) {
@@ -328,9 +332,9 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
 
     selectedItem.start_time = moment(dragTime);
     selectedItem.end_time = moment(dragTime).add(selectedItem.duration, 'days');
-    selectedItem.name = this.props.visibleGroups[newGroupOrder].title;
+    selectedItem.name = this.vstsStore.visibleGroups[newGroupOrder].title;
 
-    VSTSActions.updateActivity(selectedItem);    
+    this.vstsStore.updateActivity(selectedItem);    
   }
 
   onItemResize(itemId: number, time: Date, edge: string) {
@@ -350,14 +354,14 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     selectedItem.end_time = end;
     selectedItem.duration = duration;
 
-    VSTSActions.updateActivity(selectedItem);    
+    this.vstsStore.updateActivity(selectedItem);    
   }
 
   onItemDuplicate() {
     let { selectedItem } = this.state;
     if (!selectedItem) { return; }
 
-    VSTSActions.duplicateActivity(selectedItem.id);
+    this.vstsStore.duplicateActivity(selectedItem.id);
   }
 
   onDelete() {
@@ -372,7 +376,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     if (!selectedItem) { return; }
 
     selectedItem.name = 'Please Delete';
-    VSTSActions.updateActivity(selectedItem);
+    this.vstsStore.updateActivity(selectedItem);
     this.setState({ askDelete: false });
   }
 
@@ -392,7 +396,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
         setTimeout(
           () => {
             this.autocompleteTimeoutId = null;
-            VSTSActions.searchActivities(value || '');
+            this.vstsStore.searchActivities(value || '');
           }, 
           200
         );
@@ -447,7 +451,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
       </div>
     );
 
-    let { visibleGroups, visibleActivities } = this.props;
+    let { visibleGroups, visibleActivities } = this.vstsStore;
     if (visibleGroups.length === 0) {
       visibleGroups = [{
         id: 1,
@@ -482,7 +486,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
       if (atOpen >= 0 && atClose > atOpen) {
         assignedTo = assignedTo.substr(atOpen + 1, atClose - atOpen - 1);
       }
-      isMyActivity = assignedTo === this.props.lists.user.email || false;
+      isMyActivity = assignedTo === this.vstsStore.lists.user.email || false;
 
       itemType = this.state.selectedItem.type;
     }
@@ -545,7 +549,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                   checked={this.state.searchServer}
                   onChange={(checked: boolean) => {
                     this.setState({ searchServer: checked });
-                    VSTSActions.searchActivities(this.state.search || '');
+                    this.vstsStore.searchActivities(this.state.search || '');
                   }}
                 />
 
@@ -554,7 +558,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                   label="Organization / Project"
                   placeholder="..."
                   className="md-cell md-cell--10 project-type"
-                  data={this.state.searchServer ? this.props.searchResults as any : this.props.projects as any}
+                  data={this.state.searchServer ? this.vstsStore.searchResults as any : this.vstsStore.projects as any}
                   dataLabel="value"
                   filter={Autocomplete.caseInsensitiveFilter}
                   autocompleteWithLabel={true}
@@ -617,7 +621,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                   id="tags-autocomplete"
                   label="Select tags"
                   className="md-cell md-cell--6"
-                  data={this.props.lists.tags}
+                  data={this.vstsStore.lists.tags}
                   onAutocomplete={this.addTag}
                   clearOnAutocomplete={true}
                 />
@@ -632,7 +636,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                   className="md-cell md-cell--6"
                   value={this.state.selectedItem.area_path}
                   onChange={this.onAreaChange}
-                  menuItems={this.props.lists.areas}
+                  menuItems={this.vstsStore.lists.areas}
                 />
 
                 {this.state.selectedItem.type === 'Activity' && (
@@ -641,7 +645,7 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
                       label="Activity Type"
                       placeholder="Placeholder"
                       className="md-cell md-cell--6"
-                      menuItems={this.props.lists.activityTypes}
+                      menuItems={this.vstsStore.lists.activityTypes}
                       simplifiedMenu={true}
                       value={this.state.selectedItem.activity_type}
                       onChange={this.onActivityTypeChange}
@@ -673,5 +677,3 @@ class Timeline extends React.Component<ActivitiesContainer, State> {
     );
   }
 }
-
-export default connectToStores(Timeline);

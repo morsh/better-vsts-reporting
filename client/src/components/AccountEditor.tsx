@@ -1,29 +1,35 @@
 import * as React from 'react';
-import connectToStores from 'alt-utils/lib/connectToStores';
+import { inject, observer } from 'mobx-react';
 
 import { TextField, Button, FontIcon } from 'react-md';
 
-import AccountStore, { AccountState } from '../state/AccountStore';
-import { VSTSActions } from '../state';
-import AccountActions from '../state/AccountActions';
+import { AccountStore } from '../state/Account';
+import { VSTSStore } from '../state/VSTS';
 
 import './account.css';
 
-class AccountEditor extends React.Component<AccountState> {
+interface IProps {
+  accountStore?: AccountStore;
+  vstsStore?: VSTSStore;
+}
 
-  static getStores(props: {}) {
-    return [AccountStore];
-  }
+@inject('accountStore', 'vstsStore')
+@observer
+export default class AccountEditor extends React.Component<IProps> {
 
-  static getPropsFromStores(props: {}) {
-      return AccountStore.getState();
-  }
+  accountStore: AccountStore;
+  vstsStore: VSTSStore;
 
-  constructor(props: AccountState) {
+  constructor(props: IProps) {
     super(props);
+
+    this.accountStore = props.accountStore!;
+    this.vstsStore = props.vstsStore!;
   }
 
   render () {
+
+    const { accountName } = this.accountStore;
     return (
       <div className="acct-edit">
 
@@ -32,14 +38,14 @@ class AccountEditor extends React.Component<AccountState> {
           id="account-text"
           className="acct-edit-userName" 
           leftIcon={<FontIcon>account_circle</FontIcon>}
-          value={this.props.accountName} 
-          onChange={value => AccountActions.updateAccount(value)}
+          value={accountName} 
+          onChange={value => this.accountStore.updateAccount(value + '')}
         />
 
         <Button 
           icon={true} 
           className="acct-edit-submit" 
-          onClick={() => VSTSActions.loadActivities()}
+          onClick={() => this.vstsStore.loadActivities()}
         >play_arrow
         </Button>
 
@@ -47,5 +53,3 @@ class AccountEditor extends React.Component<AccountState> {
     );
   }
 }
-
-export default connectToStores(AccountEditor);

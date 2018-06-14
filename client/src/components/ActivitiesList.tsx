@@ -1,5 +1,5 @@
 import * as React from 'react';
-import connectToStores from 'alt-utils/lib/connectToStores';
+import { observer, inject } from 'mobx-react';
 
 import {
   DataTable,
@@ -12,26 +12,27 @@ import * as _ from 'lodash';
 
 import './activities-list.css';
 
-import VSTSStore, { ActivitiesContainer } from '../state/VSTSStore';
-import VSTSActions from 'src/state/VSTSActions';
+import { VSTSStore } from '../state/VSTS';
 
-interface State {
+interface IState {
   ascending: boolean;
   field: string;
 }
 
-class ActivitiesList extends React.Component<ActivitiesContainer, State> {
+interface IProps {
+  vstsStore?: VSTSStore;
+}
 
-  static getStores(props: {}) {
-    return [VSTSStore];
-  }
+@inject('vstsStore')
+@observer
+export default class ActivitiesList extends React.Component<IProps, IState> {
 
-  static getPropsFromStores(props: {}) {
-      return VSTSStore.getState();
-  }
+  vstsStore: VSTSStore;
 
-  constructor(props: ActivitiesContainer) {
+  constructor(props: IProps) {
     super(props);
+
+    this.vstsStore = props.vstsStore!;
 
     this.state = {
       ascending: false,
@@ -40,7 +41,7 @@ class ActivitiesList extends React.Component<ActivitiesContainer, State> {
   }
 
   componentWillMount() {
-    VSTSActions.loadActivities();
+    this.vstsStore.loadActivities();
   }
 
   sort = (field) => {
@@ -62,7 +63,7 @@ class ActivitiesList extends React.Component<ActivitiesContainer, State> {
   render () {
 
     const { field, ascending } = this.state;
-    const activities =  _.orderBy(_.values(this.props.activities).slice(), [field], [ascending ? 'asc' : 'desc']);
+    const activities =  _.orderBy(_.values(this.vstsStore.activities).slice(), [field], [ascending ? 'asc' : 'desc']);
     
     const rows = activities.map(({ id, name, type, start_time, end_time, parentPath }) => (
       <TableRow key={id} selectable={false}>
@@ -94,5 +95,3 @@ class ActivitiesList extends React.Component<ActivitiesContainer, State> {
     );
   }
 }
-
-export default connectToStores(ActivitiesList);

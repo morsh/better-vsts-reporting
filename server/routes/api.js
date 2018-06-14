@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const vsts = require('vso-node-api');
 const buildApi = require('vso-node-api/BuildApi');
 const workItemTrackingInterfaces = require("vso-node-api/interfaces/WorkItemTrackingInterfaces");
@@ -52,192 +54,18 @@ router.get('/', (req, res) => {
 router.get('/lists', async (req, res) => {
 
   let vstsBuildApi = await connect.getBuildApi();
-  let tagsString = `
-    #Account_Management
-    #Connect
-    #BusinessProductivity
-    #DE_AI_ComputerVision
-    #DE_Containers_Microservices
-    #DE_IoT_AssetManagement
-    #DE_MixedReality
-    #DE_Serverless
-    #DE_Teams_Graph
-    #GISV_Recruit
-    #IntelligentCloud
-    #MPC
-    #OSS
-    #SaaS_Offering
-    #Tech_.Net
-    #Tech_AIOther
-    #Tech_AnalysisServices
-    #Tech_Analytics
-    #Tech_APIApp
-    #Tech_APIManagement
-    #Tech_ApplicationGateway
-    #Tech_ApplicationInsights
-    #Tech_AppService
-    #Tech_ARM
-    #Tech_ASP.Net
-    #Tech_Authorization (RBAC)
-    #Tech_Azure
-    #Tech_Azure SQL Database
-    #Tech_Azure SQL DW
-    #Tech_AzureActiveDirectory
-    #Tech_AzureAD
-    #Tech_AzureAppServices
-    #Tech_AzureBatch
-    #Tech_AzureCompute
-    #Tech_AzureContainerService
-    #Tech_AzureData&Storage
-    #Tech_AzureFunctions
-    #Tech_AzureGPU
-    #Tech_AzureKubernetesService
-    #Tech_AzureMarketplace
-    #Tech_AzureMedia&CDN
-    #Tech_AzureMonitor
-    #Tech_AzureMySQL
-    #Tech_AzureNetwork
-    #Tech_AzureNetworking
-    #Tech_AzurePostgreSQL
-    #Tech_AzureSearch
-    #Tech_AzureSQLDW
-    #Tech_AzureStorage
-    #Tech_BizTalkServices
-    #Tech_Blockchain
-    #Tech_BotFramework
-    #Tech_Bots
-    #Tech_CaaP
-    #Tech_CDN
-    #Tech_CloudServices
-    #Tech_CNTK
-    #Tech_CognitiveServices
-    #Tech_ContainersOther
-    #Tech_CortanaSkills
-    #Tech_CosmosDB
-    #Tech_Databricks
-    #Tech_DataCatalog
-    #Tech_DataFactory
-    #Tech_DataLake
-    #Tech_DataLakeAnalytics
-    #Tech_DataLakeStorage
-    #Tech_DataPlatform
-    #Tech_DataServiceOther
-    #Tech_Desktop
-    #Tech_DeveloperServices
-    #Tech_DevOps
-    #Tech_Docker
-    #Tech_DocumentDB
-    #Tech_Dynamics365
-    #Tech_Edge
-    #Tech_Engineering Practice
-    #Tech_EventGrid
-    #Tech_EventHub
-    #Tech_EventHubs
-    #Tech_ExpressRoute
-    #Tech_GameServices
-    #Tech_Gaming
-    #Tech_GPUCompute
-    #Tech_Hadoop
-    #Tech_HDInsight
-    #Tech_Holographic
-    #Tech_Hololens
-    #Tech_Identity&Access
-    #Tech_Immersive
-    #Tech_IoT
-    #Tech_IoTHub
-    #Tech_IoTOther
-    #Tech_KeyVault
-    #Tech_Linux
-    #Tech_LinuxVM
-    #Tech_LogicApps
-    #Tech_MachineLearning
-    #Tech_MachineLearningWorkBench
-    #Tech_Media
-    #Tech_MediaServices
-    #Tech_Microservices
-    #Tech_MicrosoftGraph
-    #Tech_MicrosoftTeams
-    #Tech_MobileApp
-    #Tech_MobileCenter
-    #Tech_MobileEngagement
-    #Tech_MobileOther
-    #Tech_NotificationHub
-    #Tech_O365
-    #Tech_OfficeExtensibility UX
-    #Tech_OfficeGroupConnectors
-    #Tech_OneDrive
-    #Tech_OperationalInsights
-    #Tech_Outlook_Exchange
-    #Tech_PowerBI
-    #Tech_ProjectOxford
-    #Tech_RedisCache
-    #Tech_RemoteApp
-    #Tech_RServer
-    #Tech_Search
-    #Tech_SecurityCenter
-    #Tech_ServiceBus
-    #Tech_ServiceFabric
-    #Tech_SharePoint
-    #Tech_SingleVM
-    #Tech_SkypeConsumer
-    #Tech_SkypeforBusiness
-    #Tech_SolutionTemplates
-    #Tech_SQLDB
-    #Tech_SQLReporting
-    #Tech_SQLServer
-    #Tech_Stack
-    #Tech_StreamAnalytics
-    #Tech_Tensorflow
-    #Tech_TrafficManager
-    #Tech_UWPApps
-    #Tech_VirtualMachines
-    #Tech_VirtualNetwork
-    #Tech_VMExtensions
-    #Tech_VSCode
-    #Tech_VSTS
-    #Tech_WebApp
-    #Tech_Windows
-    #Tech_WindowsIoT
-    #Tech_WindowsVM
-    #Tech_Xamarin
-    #Tech_XamarinTestCloud
-    #TechPlayReady
-    #Temp_AsiaReview
-    #TWG
-    #TWG_Client
-    #TWG_HighScaleData
-  `;
+  let valuesPath = path.join(__dirname, 'values');
+  let tagsPath = path.join(valuesPath, 'tags.txt');
+  let tagsString = fs.readFileSync(tagsPath).toString();
   let tags = tagsString.trim().split('\n');
 
-  let areas = [
-    "CSEng",
-    "CSEng\\DWR",
-    "CSEng\\DWR\\Executive Escalations",
-    "CSEng\\DWR\\Industry",
-    "CSEng\\DWR\\Reactive",
-    "CSEng\\Evangelism DevCommunity",
-    "CSEng\\Evangelism Direct Evangelism",
-    "CSEng\\Evangelism Startup",
-    "CSEng\\Evangelism Student",
-    "CSEng\\GISV Cross Industry",
-    "CSEng\\GISV Industry"
-  ];
+  let areasPath = path.join(valuesPath, 'areas.txt');
+  let areasString = fs.readFileSync(areasPath).toString();
+  let areas = areasString.trim().split('\n');
 
-  let activityTypes = [
-    "Coding and Testing",
-    "Demand Generation and Marketing",
-    "Design session or Review",
-    "Engineering Feedback",
-    "Evangelism In-Person Attend (Community Event, Booth)",
-    "Evangelism In-Person Present (Technical Presentation, Speaking)",
-    "Evangelism Online (Blogs, Podcasts, Articles, Social Media)",
-    "Hackfest",
-    "Internal Administration and Management - General",
-    "Personal Development, Upskilling and Training",
-    "Technical Account and Program Management",
-    "Technical qualifying and envisioning",
-    "Unavailable"
-  ];
+  let activityTypesPath = path.join(valuesPath, 'activityTypes.txt');
+  let activityTypesString = fs.readFileSync(activityTypesPath).toString();
+  let activityTypes = activityTypesString.trim().split('\n');;
 
   let vstsWork = await connect.getWorkItemTrackingApi();
   
