@@ -1,36 +1,29 @@
 import * as React from 'react';
-
-import ToastStore, { ToastStoreState } from '../state/ToastStore';
-import ToastActions from '../state/ToastActions';
+import { observer, inject } from 'mobx-react';
+import { ToastStore } from '../state/Toasts';
 
 import Snackbar from 'react-md/lib/Snackbars';
 
-export default class ToastBar extends React.Component<any, ToastStoreState> {
+interface IProps {
+  toastStore?: ToastStore;
+}
 
-  constructor(props: any) {
+@inject('toastStore')
+@observer
+export default class ToastBar extends React.Component<IProps> {
+
+  toastStore: ToastStore;
+
+  constructor(props: IProps) {
     super(props);
 
-    this.state = ToastStore.getState();
+    this.toastStore = this.props.toastStore!;
 
-    this.onChange = this.onChange.bind(this);
     this.removeToast = this.removeToast.bind(this);
   }
 
-  onChange(state: ToastStoreState) {
-    let { toasts, autohide, autohideTimeout } = state;
-    this.setState({
-      toasts: toasts.map(o => ({ text: o.text })),
-      autohide, 
-      autohideTimeout
-    });
-  }
-
-  componentDidMount() {
-    ToastStore.listen(this.onChange);
-  }
-
   render() {
-    const {toasts, autohide, autohideTimeout} = this.state;
+    const { toasts, autohide, autohideTimeout } = this.toastStore;
     return (
       <Snackbar
         toasts={toasts}
@@ -43,6 +36,6 @@ export default class ToastBar extends React.Component<any, ToastStoreState> {
   }
 
   private removeToast() {
-    ToastActions.removeToast();
+    this.toastStore.removeToast();
   }
 }

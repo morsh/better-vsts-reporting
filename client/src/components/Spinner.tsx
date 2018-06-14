@@ -1,23 +1,29 @@
 import * as React from 'react';
-import connectToStores from 'alt-utils/lib/connectToStores';
+import { observer, inject } from 'mobx-react';
+import { SpinnerStore } from '../state/Spinner';
 
 import CircularProgress from 'react-md/lib/Progress/CircularProgress';
 
-import SpinnerStore, { SpinnerStoreState } from '../state/SpinnerStore';
+interface IProps {
+  spinnerStore?: SpinnerStore;
+}
 
-class Spinner extends React.Component<SpinnerStoreState> {
+@inject('spinnerStore')
+@observer
+export default class Spinner extends React.Component<IProps> {
 
-  static getStores(props: {}) {
-    return [SpinnerStore];
-  }
+  spinnerStore: SpinnerStore;
 
-  static getPropsFromStores(props: {}) {
-      return SpinnerStore.getState();
+  constructor(props: IProps) {
+    super(props);
+
+    this.spinnerStore = this.props.spinnerStore!;
   }
 
   render () {
 
-    let refreshing = this.props.pageLoading || this.props.requestLoading || false;
+    const { pageLoading, requestLoading } = this.spinnerStore;
+    let refreshing = pageLoading || requestLoading || false;
 
     return (
       <div style={{ padding: 5 }}>
@@ -26,5 +32,3 @@ class Spinner extends React.Component<SpinnerStoreState> {
     );
   }
 }
-
-export default connectToStores(Spinner);

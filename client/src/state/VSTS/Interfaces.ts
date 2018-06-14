@@ -79,3 +79,25 @@ export interface SearchResults {
   workItems: WorkItems;
   parentLinks: ParentLinks;
 }
+
+export interface ParentListItem {
+  value: string;
+  type: string;
+}
+
+export interface ActivitiesContainer extends VSTSData {
+  projects: Array<ParentListItem>;
+  visibleActivities: Array<Activity>;
+  visibleGroups: Array<ActivityGroup>;
+
+  search: string;
+  searchResults: Array<ParentListItem>;
+
+  lists: any;
+  selectedActivity: Activity | null;
+}
+
+export interface LoadActivityResults {
+  workItems: WorkItems;
+  parentLinks: ParentLinks;
+}

@@ -63,7 +63,7 @@ router.get('/lists', async (req, res) => {
   let areasString = fs.readFileSync(areasPath).toString();
   let areas = areasString.trim().split('\n');
 
-  let activityTypesPath = path.join(valuesPath, 'areas.txt');
+  let activityTypesPath = path.join(valuesPath, 'activityTypes.txt');
   let activityTypesString = fs.readFileSync(activityTypesPath).toString();
   let activityTypes = activityTypesString.trim().split('\n');;
 

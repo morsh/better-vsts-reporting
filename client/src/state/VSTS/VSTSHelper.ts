@@ -1,10 +1,9 @@
-import * as _ from 'lodash';
 import * as moment from 'moment';
-import { VSTSActivity, Activity, VSTSData, ParentLinks, WorkItems } from './VSTSInterfaces';
+import { VSTSActivity, Activity, VSTSData, ParentLinks, WorkItems } from './Interfaces';
 
 function getGroupId(item: VSTSActivity, data: VSTSData): number {
   let groupName = item.fields['System.Title'];
-  let group = _.find(data.groups, { title: groupName, parentId: data.parentLinks[item.id] });
+  let group = data.groups.find(g => g.title === groupName &&  g.parentId === data.parentLinks[item.id]);
   if (group) { return group.id; }
 
   let groupId = data.nextGroupId++;
