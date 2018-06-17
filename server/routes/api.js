@@ -53,19 +53,18 @@ router.get('/', (req, res) => {
 
 router.get('/lists', async (req, res) => {
 
-  let vstsBuildApi = await connect.getBuildApi();
   let valuesPath = path.join(__dirname, 'values');
   let tagsPath = path.join(valuesPath, 'tags.txt');
   let tagsString = fs.readFileSync(tagsPath).toString();
-  let tags = tagsString.trim().split('\n');
+  let tags = tagsString.trim().split(/\r?\n/);
 
   let areasPath = path.join(valuesPath, 'areas.txt');
   let areasString = fs.readFileSync(areasPath).toString();
-  let areas = areasString.trim().split('\n');
+  let areas = areasString.trim().split(/\r?\n/);
 
   let activityTypesPath = path.join(valuesPath, 'activityTypes.txt');
   let activityTypesString = fs.readFileSync(activityTypesPath).toString();
-  let activityTypes = activityTypesString.trim().split('\n');;
+  let activityTypes = activityTypesString.trim().split(/\r?\n/);;
 
   let vstsWork = await connect.getWorkItemTrackingApi();
   
