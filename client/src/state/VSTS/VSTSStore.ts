@@ -14,6 +14,7 @@ import {
   ParentListItem,
 } from './Interfaces';
 import { api } from './Api';
+import { selectedItemStore } from '../SelectedItem';
 
 export class VSTSStore {
 
@@ -93,7 +94,7 @@ export class VSTSStore {
   @action async updateActivity(activity: Activity) {
     await api.updateActivity(activity, this.getState());
     this.loadActivities();
-    this.selectedActivity = null;
+    this.unselectActivity();
   }
 
   updateVisibleActivities() {
@@ -122,6 +123,7 @@ export class VSTSStore {
   @action selectActivity(activityId: number) {
     this.selectedActivity = this.activities[activityId];
     this.updateTimeRange();
+    selectedItemStore.selectItem(this.selectedActivity);
   }
 
   @action unselectActivity(id?: number) {
@@ -141,6 +143,7 @@ export class VSTSStore {
     }
 
     this.updateVisibleActivities();
+    selectedItemStore.unselectItem();
   }
 
   @action duplicateActivity(activityId: number) {
@@ -150,11 +153,13 @@ export class VSTSStore {
     newActivity.assigned_to = this.lists.user.email;
     this.selectedActivity = newActivity;
     this.updateTimeRange();
+    selectedItemStore.selectItem(this.selectedActivity);
   }
 
   @action createNewActivityItem(start: moment.Moment) {
     let newActivity = createNewActivity(moment(start), this.lists.user.email);
     this.selectedActivity = newActivity;
+    selectedItemStore.selectItem(this.selectedActivity);
   }
 
   private getState(): VSTSData {

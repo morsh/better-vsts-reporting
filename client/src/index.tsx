@@ -9,6 +9,7 @@ import { toastStore } from './state/Toasts';
 import { spinnerStore } from './state/Spinner';
 import { vstsStore } from './state/VSTS';
 import { accountStore } from './state/Account';
+import { selectedItemStore } from './state/SelectedItem';
 
 WebFontLoader.load({
   google: {
@@ -20,7 +21,8 @@ const stores = {
   toastStore,
   spinnerStore,
   vstsStore,
-  accountStore
+  accountStore,
+  selectedItemStore
 };
 
 ReactDOM.render(
