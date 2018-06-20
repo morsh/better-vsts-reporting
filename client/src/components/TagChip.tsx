@@ -1,12 +1,12 @@
 import * as React from 'react';
-import PropTypes from 'prop-types';
 import { Avatar, Chip } from 'react-md';
 
-export default class TagChip extends React.PureComponent<any, any> {
-  static propTypes = {
-    tag: PropTypes.string.isRequired,
-    onClick: PropTypes.func.isRequired,
-  };
+interface IProps {
+  tag: string;
+  onClick: (tag: string) => void;
+}
+
+export default class TagChip extends React.PureComponent<IProps, any> {
 
   handleRemove = () => {
     this.props.onClick(this.props.tag);
@@ -14,6 +14,7 @@ export default class TagChip extends React.PureComponent<any, any> {
 
   render() {
     const { tag, ...props } = this.props;
+    
     return (
       <Chip
         {...props}
