@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const vsts = require('vso-node-api');
-const buildApi = require('vso-node-api/BuildApi');
 const workItemTrackingInterfaces = require("vso-node-api/interfaces/WorkItemTrackingInterfaces");
 const _ = require('lodash');
 
